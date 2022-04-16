@@ -3,7 +3,6 @@
 namespace WebTheory\Collection\Kernel;
 
 use ArrayIterator;
-use InvalidArgumentException;
 use IteratorAggregate;
 use LogicException;
 use OutOfBoundsException;
@@ -355,7 +354,7 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
 
     public function toJson(): string
     {
-        return json_encode($this->items);
+        return json_encode($this->items, JSON_THROW_ON_ERROR);
     }
 
     public function jsonSerialize(): mixed
@@ -401,7 +400,7 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
         string $order = OrderInterface::ASC,
         ?string $property = null
     ): callable {
-        $property = $property ?? $this->identifier;
+        $property ??= $this->identifier;
 
         return function ($a, $b) use ($map, $property, $order): int {
             // Set value to 0 if one is not provided

@@ -153,7 +153,7 @@ class CollectionKernelTest extends UnitTestCase
     {
         return [
             'ascending' => [Order::ASC],
-            'descending' =>  [Order::DESC],
+            'descending' => [Order::DESC],
         ];
     }
 
@@ -232,7 +232,7 @@ class CollectionKernelTest extends UnitTestCase
     {
         # Arrange
         $items = $this->createDummyItems();
-        $remove = rand(0, count($items) - 1);
+        $remove = random_int(0, count($items) - 1);
         $item = $items[$remove];
 
         $sut = new CollectionKernel($items, $this->dummyFactory);
@@ -252,7 +252,7 @@ class CollectionKernelTest extends UnitTestCase
     {
         # Arrange
         $items = $this->createDummyItems();
-        $remove = rand(0, count($items) - 1);
+        $remove = random_int(0, count($items) - 1);
         $item = $items[$remove]->id;
 
         $sut = new CollectionKernel($items, $this->dummyFactory, 'id');
@@ -272,16 +272,15 @@ class CollectionKernelTest extends UnitTestCase
     public function it_removes_specified_item_by_identifier_when_collection_is_mapped()
     {
         # Arrange
-        $ids = $this->dummyList(fn () => $this->unique->slug, 5);
-        $items = $this->createDummyItems($ids);
+        $items = $this->createDummyItems();
         $mapped = [];
 
         foreach ($items as $item) {
             $mapped[$item->id] = $item;
         }
 
-        $remove = rand(0, count($items) - 1);
-        $item = $items[$remove]->getDummyId();
+        $remove = random_int(0, count($items) - 1);
+        $item = $items[$remove]->id;
 
         $sut = new CollectionKernel($items, $this->dummyFactory, 'id', [], true);
 
