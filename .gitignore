@@ -1,0 +1,31 @@
+# Dev and CI
+*.cache
+.playground
+.playground.php
+/build/
+/dist/
+/logs/
+/temp/
+captainhook.config.json
+cghooks.lock
+docker-compose.override.yml
+
+# Composer
+/vendor/
+composer.lock
+
+# Env
+*.env
+.env.*
+.*.env
+!.env.example
+
+# Editor/ IDE
+*.code-workspace
+.idea/
+.project/
+.vscode/
+
+# System files
+.DS_Store
+Thumbs.db

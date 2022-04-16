@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<ruleset
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation="vendor/squizlabs/php_codesniffer/phpcs.xsd"
+  name=":package_name"
+>
+  <description>Coding standard for :vendor_name/:package_name</description>
+
+  <!-- Paths -->
+  <file>./src</file>
+  <file>./tests</file>
+
+  <!-- Args -->
+  <arg value="p"/>
+  <arg value="s"/>
+  <arg name="colors"/>
+
+  <!-- Config -->
+  <config name="ignore_warnings_on_exit"
+    value="1"/>
+
+  <config name="ignore_errors_on_exit"
+    value="1"/>
+
+  <config name="default_standard"
+    value="PSR12"/>
+
+  <!-- Use the PSR-12 Standard-->
+  <rule ref="PSR12"/>
+
+  <!-- Disable Default Squiz Checks -->
+  <rule ref="Squiz">
+    <exclude name="Squiz"/>
+  </rule>
+
+  <!-- Disable camel case method name rule for tests -->
+  <rule ref="PSR1.Methods.CamelCapsMethodName">
+    <exclude-pattern>./tests/Suites</exclude-pattern>
+  </rule>
+</ruleset>
