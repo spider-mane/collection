@@ -6,15 +6,23 @@ namespace Tests\Suites\Unit\Kernel;
 
 use Closure;
 use LogicException;
+use OutOfBoundsException;
 use PHPUnit\Framework\MockObject\MockObject;
 use stdClass;
 use Tests\Support\UnitTestCase;
 use WebTheory\Collection\Contracts\CollectionKernelInterface;
+use WebTheory\Collection\Contracts\InvalidOrderExceptionInterface;
 use WebTheory\Collection\Kernel\CollectionKernel;
 use WebTheory\Collection\Sorting\Order;
 
 class CollectionKernelTest extends UnitTestCase
 {
+    protected const SUT_CLASS = CollectionKernel::class;
+
+    protected const DUMMY_ITEM_CLASS = 'DummyItem';
+
+    protected const DUMMY_COLLECTION_CLASS = 'DummyCollection';
+
     protected CollectionKernel $sut;
 
     protected array $dummyItems;
@@ -22,10 +30,6 @@ class CollectionKernelTest extends UnitTestCase
     protected Closure $dummyFactory;
 
     protected string $identifier = 'id';
-
-    protected const DUMMY_ITEM_CLASS = 'DummyItem';
-
-    protected const DUMMY_COLLECTION_CLASS = 'DummyCollection';
 
     protected function setUp(): void
     {
@@ -81,6 +85,21 @@ class CollectionKernelTest extends UnitTestCase
         }
 
         return $item;
+    }
+
+    protected function getRandomDummyItem(): MockObject
+    {
+        return $this->dummyItems[array_rand($this->dummyItems)];
+    }
+
+    protected function createDummySortMap(array $keys = null): array
+    {
+        $keys ??= $this->dummyList(fn () => $this->unique->slug, 20);
+
+        return $this->dummyMap(
+            fn () => $this->unique->numberBetween(1, count($keys)),
+            $keys
+        );
     }
 
     /**
@@ -147,14 +166,6 @@ class CollectionKernelTest extends UnitTestCase
 
         # Assert
         $this->assertEquals($item, $result);
-    }
-
-    public function orderDataProvider(): array
-    {
-        return [
-            'ascending' => [Order::ASC],
-            'descending' => [Order::DESC],
-        ];
     }
 
     /**
@@ -225,6 +236,14 @@ class CollectionKernelTest extends UnitTestCase
         $this->assertEquals($expectedOrder, $results);
     }
 
+    public function orderDataProvider(): array
+    {
+        return [
+            'ascending' => [Order::ASC],
+            'descending' => [Order::DESC],
+        ];
+    }
+
     /**
      * @test
      */
@@ -232,7 +251,7 @@ class CollectionKernelTest extends UnitTestCase
     {
         # Arrange
         $items = $this->createDummyItems();
-        $remove = random_int(0, count($items) - 1);
+        $remove = array_rand($items);
         $item = $items[$remove];
 
         $sut = new CollectionKernel($items, $this->dummyFactory);
@@ -252,7 +271,7 @@ class CollectionKernelTest extends UnitTestCase
     {
         # Arrange
         $items = $this->createDummyItems();
-        $remove = random_int(0, count($items) - 1);
+        $remove = array_rand($items);
         $item = $items[$remove]->id;
 
         $sut = new CollectionKernel($items, $this->dummyFactory, 'id');
@@ -279,7 +298,7 @@ class CollectionKernelTest extends UnitTestCase
             $mapped[$item->id] = $item;
         }
 
-        $remove = random_int(0, count($items) - 1);
+        $remove = array_rand($items);
         $item = $items[$remove]->id;
 
         $sut = new CollectionKernel($items, $this->dummyFactory, 'id', [], true);
@@ -291,5 +310,353 @@ class CollectionKernelTest extends UnitTestCase
 
         # Assert
         $this->assertEquals($mapped, $sut->toArray());
+    }
+
+    /**
+     * @test
+     * @dataProvider identifierOperationDataProvider
+     */
+    public function it_throws_proper_exception_if_an_operation_requiring_an_identifier_is_attempted_without_one(
+        array $items,
+        string $method,
+        array $args,
+        string $message = null
+    ) {
+        $sut = new CollectionKernel($items, $this->dummyFactory);
+
+        # Expect
+        $this->expectException(LogicException::class);
+
+        if (isset($message)) {
+            $this->expectExceptionMessage($message);
+        }
+
+        # Act
+        $sut->$method(...array_values($args));
+    }
+
+    public function identifierOperationDataProvider(): array
+    {
+        $this->initFaker();
+
+        $genericMessageTemplate = "Use of " . static::SUT_CLASS . "::%s requires an identifier.";
+
+        $itemCount = 10;
+        $itemIds = $this->dummyList(fn () => $this->unique->slug, $itemCount);
+        $items = $this->createDummyItems($itemIds);
+        $randomItem = $items[array_rand($items)];
+
+        $sortMap = $this->createDummySortMap($itemIds);
+
+        return [
+            $this->mut('findById') => [
+                'items' => $items,
+                'method' => 'findById',
+                'args' => [$randomItem->id],
+                'message' => sprintf($genericMessageTemplate, 'findById'),
+            ],
+
+            $this->mut('sortMapped') => [
+                'items' => $items,
+                'method' => 'sortMapped',
+                'args' => [$sortMap, Order::ASC, null],
+                'message' => 'Cannot sort by map without property or item identifier set.',
+            ],
+        ];
+    }
+
+    /**
+     * @test
+     */
+    public function it_throws_proper_exception_if_an_item_search_returns_nothing()
+    {
+        # Expect
+        $this->expectException(OutOfBoundsException::class);
+
+        # Act
+        $this->sut->findById($this->unique->slug);
+    }
+
+    /**
+     * @test
+     * @dataProvider orderMethodsDataProvider
+     */
+    public function it_throws_proper_exception_if_an_invalid_order_is_provided(
+        string $method,
+        array $args,
+        string $message = null
+    ) {
+        # Expect
+        $this->expectException(InvalidOrderExceptionInterface::class);
+
+        if (isset($message)) {
+            $this->expectExceptionMessage($message);
+        }
+
+        # Act
+        $this->sut->$method(...array_values($args));
+    }
+
+    public function orderMethodsDataProvider(): array
+    {
+        $this->initFaker();
+
+        $invalidOrder = $this->fake->slug(3);
+
+        $sortMap = $this->createDummySortMap();
+
+        return [
+            $this->mut('sortBy') => [
+                'method' => 'sortBy',
+                'args' => ['id', $invalidOrder],
+            ],
+
+            $this->mut('sortMapped') => [
+                'method' => 'sortMapped',
+                'args' => [$sortMap, $invalidOrder, 'id'],
+            ],
+        ];
+    }
+
+    /**
+     * @test
+     * @dataProvider objectMemberAccessabilityDataProvider
+     *
+     */
+    public function it_can_extract_a_column_of_data(bool $memberIsPublic)
+    {
+        # Arrange
+        $ids = $this->dummyList(fn () => $this->unique->slug, 10);
+        $items = $this->createDummyItems($ids, $memberIsPublic);
+
+        $sut = new CollectionKernel(
+            $items,
+            $this->dummyFactory,
+            null,
+            ['id' => 'getDummyId']
+        );
+
+        # Act
+        $results = $sut->column('id');
+
+        # Assert
+        $this->assertEquals($ids, $results);
+    }
+
+    public function objectMemberAccessabilityDataProvider(): array
+    {
+        return [
+            'direct access' => [true],
+            'method access' => [false],
+        ];
+    }
+
+    /**
+     * @test
+     */
+    public function it_returns_a_concrete_collection_containing_the_difference_between_its_items_and_another()
+    {
+        # Arrange
+        $shared = $this->createDummyItems();
+        $items1 = $this->createDummyItems();
+        $items2 = $this->createDummyItems();
+
+        $completeItems1 = [...$shared, ...$items1];
+        $completeItems2 = [...$shared, ...$items2];
+
+        $difference = [...$items1, ...$items2];
+
+        $sut = new CollectionKernel($completeItems1, $this->dummyFactory, 'id');
+
+        # Act
+        $result = $sut->difference($completeItems2);
+
+        // dd($diff, $result->items);
+
+        # Smoke
+        foreach ([$shared, $items1, $items2] as $items) {
+            $this->assertNotEmpty($items);
+        }
+
+        # Assert
+        $this->assertInstanceOf(static::DUMMY_COLLECTION_CLASS, $result);
+        $this->assertEquals($difference, $result->items);
+    }
+
+    /**
+     * @test
+     */
+    public function it_returns_a_concrete_collection_containing_the_intersection_of_its_items_and_another()
+    {
+        # Arrange
+        $intersection = $this->createDummyItems();
+
+        $items1 = [...$intersection, ...$this->createDummyItems()];
+        $items2 = [...$intersection, ...$this->createDummyItems()];
+
+        $sut = new CollectionKernel($items1, $this->dummyFactory, 'id');
+
+        # Act
+        $result = $sut->intersection($items2);
+
+        # Smoke
+        foreach ([$intersection, $items1, $items2] as $items) {
+            $this->assertNotEmpty($items);
+        }
+
+        # Assert
+        $this->assertInstanceOf(static::DUMMY_COLLECTION_CLASS, $result);
+        $this->assertEquals($intersection, $result->items);
+    }
+
+    /**
+     * @test
+     * @dataProvider collectionComparisonDataProvider
+     */
+    public function it_determines_whether_or_not_a_passed_collection_matches(bool $matches, array $a, array $b)
+    {
+        # Arrange
+        $sut = new CollectionKernel($a, $this->dummyFactory, 'id');
+
+        # Act
+        $result = $sut->matches($b);
+
+        # Assert
+        $this->assertSame($matches, $result);
+    }
+
+    public function collectionComparisonDataProvider(): array
+    {
+        $this->initFaker();
+
+        $items = $this->createDummyItems();
+
+        return [
+            'matches' => [true, $items, $items],
+            'does not match' => [false, $items, $this->createDummyItems()],
+        ];
+    }
+
+    /**
+     * @test
+     */
+    public function it_is_traversable()
+    {
+        # Arrange
+        $ids = array_map(fn ($item) => $item->id, $this->sut->toArray());
+
+        # Assert
+        foreach ($this->sut as $item) {
+            $this->assertInstanceOf(static::DUMMY_ITEM_CLASS, $item);
+            $this->assertEquals(current($ids), $item->id);
+
+            next($ids);
+        }
+    }
+
+    /**
+     * @test
+     */
+    public function it_is_countable()
+    {
+        $this->assertCount(count($this->sut->toArray()), $this->sut);
+    }
+
+    /**
+     * @test
+     * @dataProvider hasItemsDataProvider
+     */
+    public function it_accurately_reflects_whether_or_not_it_has_items(bool $hasItems)
+    {
+        # Arrange
+        $items = $hasItems ? $this->createDummyItems() : [];
+        $sut = new CollectionKernel($items, $this->dummyFactory, 'id');
+
+        $this->assertSame($hasItems, $sut->hasItems());
+    }
+
+    public function hasItemsDataProvider(): array
+    {
+        return [
+            'has items' => [true],
+            'no items' => [false],
+        ];
+    }
+
+    /**
+     * @test
+     */
+    public function it_removes_items_with_specified_properties()
+    {
+        # Arrange
+        $stripped = $this->dummyList(fn () => $this->unique->slug, 10);
+        $remaining = $this->dummyList(fn () => $this->unique->slug, 10);
+        $all = [...$stripped, ...$remaining];
+
+        $items = $this->createDummyItems($all);
+
+        $sut = new CollectionKernel($items, $this->dummyFactory, 'id');
+
+        # Act
+        $processed = $sut->strip('id', $stripped)->items;
+        $result = array_map(fn ($item) => $item->id, $processed);
+
+        # Assert
+        $this->assertEquals($remaining, $result);
+    }
+
+    /**
+     * @test
+     */
+    public function it_merges_collections_without_adding_duplicates()
+    {
+        # Arrange
+        $items1 = $this->createDummyItems();
+        $items2 = $this->createDummyItems();
+
+        $shared = $this->createDummyItems();
+
+        $completeItems1 = [...$items1, ...$shared];
+        $completeItems2 = [...$items2, ...$shared];
+
+        $expected = [...$items1, ...$shared, ...$items2];
+
+        $sut1 = new CollectionKernel($completeItems1, $this->dummyFactory);
+
+        # Act
+        $result = $sut1->merge($completeItems2);
+
+        # Smoke
+        foreach ([$items1, $items2, $expected] as $items) {
+            $this->assertNotEmpty($items);
+        }
+
+        # Assert
+        $this->assertInstanceOf(static::DUMMY_COLLECTION_CLASS, $result);
+        $this->assertEquals($expected, $result->items);
+    }
+
+    /**
+     * @test
+     */
+    public function it_retrieves_first_item()
+    {
+        # Arrange
+        $items = $this->sut->toArray();
+
+        # Assert
+        $this->assertEquals(reset($items), $this->sut->first());
+    }
+
+    /**
+     * @test
+     */
+    public function it_retrieves_last_item()
+    {
+        # Arrange
+        $items = $this->sut->toArray();
+
+        # Assert
+        $this->assertEquals(end($items), $this->sut->last());
     }
 }
