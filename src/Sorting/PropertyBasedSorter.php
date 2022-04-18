@@ -3,10 +3,20 @@
 namespace WebTheory\Collection\Sorting;
 
 use WebTheory\Collection\Contracts\CollectionSorterInterface;
-use WebTheory\Collection\Sorting\Abstracts\AbstractPropertyBasedSorter;
+use WebTheory\Collection\Contracts\PropertyResolverInterface;
+use WebTheory\Collection\Resolution\Abstracts\ResolvesPropertyValueTrait;
+use WebTheory\Collection\Sorting\Abstracts\AbstractSorter;
 
-class PropertyBasedSorter extends AbstractPropertyBasedSorter implements CollectionSorterInterface
+class PropertyBasedSorter extends AbstractSorter implements CollectionSorterInterface
 {
+    use ResolvesPropertyValueTrait;
+
+    public function __construct(PropertyResolverInterface $resolver, string $property)
+    {
+        $this->propertyResolver = $resolver;
+        $this->property = $property;
+    }
+
     protected function getSortingFunction(string $order): callable
     {
         return fn ($a, $b): int => $this->resolveEntriesOrder(

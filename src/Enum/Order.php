@@ -10,6 +10,6 @@ use MyCLabs\Enum\Enum;
  */
 final class Order extends Enum
 {
-    private const Asc = 'asc';
-    private const Desc = 'desc';
+    public const Asc = 'asc';
+    public const Desc = 'desc';
 }

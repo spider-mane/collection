@@ -11,6 +11,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use stdClass;
 use Tests\Support\UnitTestCase;
 use WebTheory\Collection\Contracts\CollectionKernelInterface;
+use WebTheory\Collection\Contracts\CollectionQueryInterface;
 use WebTheory\Collection\Contracts\InvalidOrderExceptionInterface;
 use WebTheory\Collection\Kernel\CollectionKernel;
 use WebTheory\Collection\Sorting\Order;
@@ -47,11 +48,13 @@ class CollectionKernelTest extends UnitTestCase
 
     protected function createDummyFactory(): Closure
     {
-        return function (...$items) {
+        return function (CollectionKernel $kernel) {
             $collection = $this->getMockBuilder(stdClass::class)
                 ->setMockClassName(static::DUMMY_COLLECTION_CLASS)
                 ->addMethods(['getDummyItems'])
                 ->getMock();
+
+            $items = $kernel->toArray();
 
             $collection->items = $items;
 
@@ -100,6 +103,11 @@ class CollectionKernelTest extends UnitTestCase
             fn () => $this->unique->numberBetween(1, count($keys)),
             $keys
         );
+    }
+
+    protected function performSutAction(CollectionKernel $sut, string $method, array $args)
+    {
+        return $sut->{$method}(...array_values($args));
     }
 
     /**
@@ -332,7 +340,7 @@ class CollectionKernelTest extends UnitTestCase
         }
 
         # Act
-        $sut->$method(...array_values($args));
+        $this->performSutAction($sut, $method, $args);
     }
 
     public function identifierOperationDataProvider(): array
@@ -394,7 +402,7 @@ class CollectionKernelTest extends UnitTestCase
         }
 
         # Act
-        $this->sut->$method(...array_values($args));
+        $this->performSutAction($this->sut, $method, $args);
     }
 
     public function orderMethodsDataProvider(): array
@@ -598,7 +606,7 @@ class CollectionKernelTest extends UnitTestCase
         $sut = new CollectionKernel($items, $this->dummyFactory, 'id');
 
         # Act
-        $processed = $sut->strip('id', $stripped)->items;
+        $processed = $sut->whereNotIn('id', $stripped)->items;
         $result = array_map(fn ($item) => $item->id, $processed);
 
         # Assert
@@ -674,5 +682,98 @@ class CollectionKernelTest extends UnitTestCase
 
         # Assert
         $this->assertContains($item, $result->items);
+    }
+
+    /**
+     * @test
+     * @dataProvider spawnActionDataProvider
+     */
+    public function it_spawns_a_concrete_collection_using_a_clone_of_itself_without_modifying_original(
+        array $items,
+        string $method,
+        array $args
+    ) {
+        # Arrange
+        $spawn = $this->getMockBuilder(stdClass::class)
+            ->setMockClassName(static::DUMMY_COLLECTION_CLASS)
+            ->addMethods(['getDummyItems'])
+            ->getMock();
+
+        $generator = function (CollectionKernel $clone) use ($spawn) {
+            $spawn->kernel = $clone;
+            $spawn->items = $clone->toArray();
+
+            return $spawn;
+        };
+
+        $sut = new CollectionKernel($items, $generator, 'id');
+
+        # Act
+        $result = $this->performSutAction($sut, $method, $args);
+
+        # Assert
+        $this->assertInstanceOf(static::DUMMY_COLLECTION_CLASS, $result);
+        $this->assertNotSame($sut, $result->kernel);
+
+        $this->assertNotEmpty($sut->toArray());
+        $this->assertSame($items, $sut->toArray());
+        $this->assertNotSame($sut->toArray(), $result->items);
+    }
+
+    public function spawnActionDataProvider(): array
+    {
+        $this->initFaker();
+
+        $itemCount = 10;
+        $itemIds = $this->dummyList(fn () => $this->unique->slug, $itemCount);
+        $items = $this->createDummyItems($itemIds);
+        $randomItem = $items[array_rand($items)];
+
+        $query = $this->createConfiguredMock(CollectionQueryInterface::class, [
+            'query' => [],
+        ]);
+
+        $sortMap = $this->dummyMap(
+            fn () => $this->unique->numberBetween(1, $itemCount),
+            $itemIds
+        );
+
+        return [
+            $this->mut('query') => [
+                'items' => $items,
+                'method' => 'query',
+                'args' => [$query],
+            ],
+
+            $this->mut('where') => [
+                'items' => $items,
+                'method' => 'where',
+                'args' => ['id', '=', $randomItem->id],
+            ],
+
+            $this->mut('whereEquals') => [
+                'items' => $items,
+                'method' => 'whereEquals',
+                'args' => ['id', $randomItem->id],
+            ],
+
+            // $this->mut('whereNotEquals') => [
+            //     'items' => $items,
+            //     'method' => 'whereNotEquals',
+            //     'args' => ['id', $randomItem->id],
+            // ],
+
+            $this->mut('filter') => [
+                'items' => $items,
+                'method' => 'filter',
+                'args' => [fn () => false],
+            ],
+
+            $this->mut('sortMapped') => [
+                'items' => $items,
+                'method' => 'sortMapped',
+                'args' => [$sortMap, Order::ASC],
+            ],
+        ];
     }
 }

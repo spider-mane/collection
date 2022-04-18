@@ -3,36 +3,21 @@
 namespace WebTheory\Collection\Sorting;
 
 use WebTheory\Collection\Contracts\CollectionSorterInterface;
-use WebTheory\Collection\Contracts\OrderInterface;
-use WebTheory\Collection\Sorting\Abstracts\AbstractPropertyBasedSorter;
+use WebTheory\Collection\Contracts\PropertyResolverInterface;
 
-class MapBasedSorter extends AbstractPropertyBasedSorter implements CollectionSorterInterface
+class MapBasedSorter extends PropertyBasedSorter implements CollectionSorterInterface
 {
     protected array $map = [];
 
-    public function setMap(array $map): MapBasedSorter
+    public function __construct(PropertyResolverInterface $resolver, string $property, array $map)
     {
+        parent::__construct($resolver, $property);
+
         $this->map = $map;
-
-        return $this;
     }
 
-    public function setProperty(string $property): MapBasedSorter
+    protected function resolveValue($item): int
     {
-        return parent::setProperty($property);
-    }
-
-    protected function getSortingFunction(string $order = OrderInterface::ASC): callable
-    {
-        return fn ($a, $b): int => $this->resolveEntriesOrder(
-            $this->getComparisonValueFor($a),
-            $this->getComparisonValueFor($b),
-            $order
-        );
-    }
-
-    protected function getComparisonValueFor($item): int
-    {
-        return (int) $this->map[$this->resolveValue($item)] ?? 0;
+        return (int) $this->map[parent::resolveValue($item)] ?? 0;
     }
 }

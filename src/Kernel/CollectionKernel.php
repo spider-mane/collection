@@ -7,18 +7,20 @@ use IteratorAggregate;
 use LogicException;
 use OutOfBoundsException;
 use Traversable;
-use WebTheory\Collection\Comparison\HashBasedCollectionComparator;
-use WebTheory\Collection\Comparison\HashBasedObjectComparator;
 use WebTheory\Collection\Comparison\PropertyBasedCollectionComparator;
 use WebTheory\Collection\Comparison\PropertyBasedObjectComparator;
 use WebTheory\Collection\Comparison\RuntimeIdBasedCollectionComparator;
 use WebTheory\Collection\Comparison\RuntimeIdBasedObjectComparator;
 use WebTheory\Collection\Contracts\CollectionComparatorInterface;
 use WebTheory\Collection\Contracts\CollectionKernelInterface;
+use WebTheory\Collection\Contracts\CollectionQueryInterface;
 use WebTheory\Collection\Contracts\CollectionSorterInterface;
+use WebTheory\Collection\Contracts\JsonSerializerInterface;
 use WebTheory\Collection\Contracts\ObjectComparatorInterface;
 use WebTheory\Collection\Contracts\OrderInterface;
 use WebTheory\Collection\Enum\LoopAction;
+use WebTheory\Collection\Json\BasicJsonSerializer;
+use WebTheory\Collection\Query\BasicQuery;
 use WebTheory\Collection\Resolution\PropertyResolver;
 use WebTheory\Collection\Sorting\MapBasedSorter;
 use WebTheory\Collection\Sorting\PropertyBasedSorter;
@@ -27,29 +29,32 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
 {
     protected array $items = [];
 
+    /**
+     * @var callable
+     */
+    protected $generator;
+
     protected ?string $identifier = null;
 
     protected bool $map = false;
 
-    protected int $jsonFlags;
+    protected JsonSerializerInterface $jsonSerializer;
 
     protected PropertyResolver $propertyResolver;
 
-    /**
-     * @var callable
-     */
-    protected $factory;
-
     public function __construct(
         array $items,
-        callable $factory,
+        callable $generator,
         ?string $identifier = null,
         array $accessors = [],
-        ?bool $map = false
+        ?bool $map = false,
+        ?JsonSerializerInterface $jsonSerializer = null
     ) {
-        $this->factory = $factory;
+        $this->generator = $generator;
         $this->identifier = $identifier;
+
         $this->map = $map ?? $this->map ?? false;
+        $this->jsonSerializer = $jsonSerializer ?? new BasicJsonSerializer();
 
         $this->propertyResolver = new PropertyResolver($accessors);
 
@@ -59,6 +64,13 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
     public function __serialize(): array
     {
         return $this->toArray();
+    }
+
+    public function collect(object ...$items): void
+    {
+        foreach ($items as $item) {
+            $this->add($item);
+        }
     }
 
     public function add(object $item): bool
@@ -72,23 +84,6 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
             : $this->items[] = $item;
 
         return true;
-    }
-
-    public function contains($item): bool
-    {
-        if (is_object($item)) {
-            return in_array($item, $this->items, true);
-        }
-
-        if ($this->isMapped()) {
-            return isset($this->items[$item]);
-        }
-
-        if ($this->hasIdentifier()) {
-            return !empty($this->find($this->identifier, $item));
-        }
-
-        return false;
     }
 
     public function remove($item): bool
@@ -114,55 +109,34 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
         return false;
     }
 
-    public function column(string $property): array
+    public function contains($item): bool
     {
-        $temp = [];
-
-        foreach ($this->items as $item) {
-            $value = $this->resolveValue($item, $property);
-
-            $temp[] = $value;
+        if (is_object($item)) {
+            return in_array($item, $this->items, true);
         }
 
-        return $temp;
+        if ($this->isMapped()) {
+            return isset($this->items[$item]);
+        }
+
+        if ($this->hasIdentifier()) {
+            return !empty($this->find($this->identifier, $item));
+        }
+
+        return false;
     }
 
-    public function first(): object
+    public function sortWith(CollectionSorterInterface $sorter, $order = OrderInterface::ASC): object
     {
-        if (!$this->hasItems()) {
-            throw new OutOfBoundsException(
-                "Can't determine first item. Collection is empty"
-            );
-        }
-
-        reset($this->items);
-
-        $first = current($this->items);
-
-        return $first;
-    }
-
-    public function last(): object
-    {
-        if (!$this->hasItems()) {
-            throw new OutOfBoundsException(
-                'Can\'t determine last item. Collection is empty'
-            );
-        }
-
-        $last = end($this->items);
-
-        reset($this->items);
-
-        return $last;
+        return $this->spawnFrom(...$sorter->sort($this->items, $order));
     }
 
     public function sortBy(string $property, string $order = OrderInterface::ASC): object
     {
-        $sorter = (new PropertyBasedSorter($this->propertyResolver))
-            ->setProperty($property);
-
-        return $this->sortWith($sorter, $order);
+        return $this->sortWith(
+            new PropertyBasedSorter($this->propertyResolver, $property),
+            $order
+        );
     }
 
     public function sortMapped(array $map, $order = OrderInterface::ASC, string $property = null): object
@@ -173,43 +147,45 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
             );
         }
 
-        $sorter = (new MapBasedSorter($this->propertyResolver))
-            ->setMap($map)
-            ->setProperty($property);
-
-        return $this->sortWith($sorter, $order);
-    }
-
-    public function sortWith(CollectionSorterInterface $sorter, $order = OrderInterface::ASC): object
-    {
-        $collection = clone $this;
-
-        $items = $sorter->sort($collection->items, $order);
-
-        return $this->collect(...$items);
+        return $this->sortWith(
+            new MapBasedSorter($this->propertyResolver, $property, $map),
+            $order
+        );
     }
 
     public function sortCustom(callable $callback): object
     {
-        $collection = clone $this;
+        $clone = clone $this;
 
-        usort($collection->items, $callback);
+        usort($clone->items, $callback);
 
-        return $this->collect(...$collection->items);
+        return $this->spawn($clone);
+    }
+
+    public function first(): object
+    {
+        return reset($this->items);
+    }
+
+    public function last(): object
+    {
+        $last = end($this->items);
+
+        reset($this->items);
+
+        return $last;
     }
 
     public function find(string $property, $value): object
     {
-        $items = $this->getFilteredItems(
-            fn ($item) => $this->resolveValue($item, $property) === $value
-        );
+        $items = $this->getItemsWhere($property, '=', $value);
 
-        if ($items) {
+        if (!empty($items)) {
             return $items[0];
         }
 
         throw new OutOfBoundsException(
-            "Can't find item with {$property} is equal to {$value}."
+            "Can't find item where {$property} is equal to {$value}."
         );
     }
 
@@ -226,28 +202,19 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
 
     public function filter(callable $callback): object
     {
-        return $this->collect(...$this->getFilteredItems($callback));
+        return $this->spawnFrom(
+            ...array_values(array_filter($this->items, $callback))
+        );
     }
 
-    public function strip($property, $values): object
+    public function query(CollectionQueryInterface $query): object
     {
-        return $this->filter(
-            fn ($item) => !in_array(
-                $this->resolveValue($item, $property),
-                $values
-            )
-        );
+        return $this->spawnFrom(...$query->query($this->items));
     }
 
     public function where(string $property, string $operator, $value): object
     {
-        return $this->filter(
-            fn ($item) => $this->itemMeetsCriteria(
-                $this->resolveValue($item, $property),
-                $operator,
-                $value
-            )
-        );
+        return $this->query($this->getBasicQuery($property, $operator, $value));
     }
 
     public function whereEquals(string $property, $value): object
@@ -255,9 +222,17 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
         return $this->where($property, '=', $value);
     }
 
-    public function spawn(callable $callback): object
+    public function whereNotIn($property, $values): object
     {
-        return $this->collect(...$this->map($callback));
+        return $this->where($property, 'not in', $values);
+    }
+
+    public function column(string $property): array
+    {
+        return array_map(
+            fn ($item) => $this->resolveValue($item, $property),
+            $this->items
+        );
     }
 
     public function map(callable $callback)
@@ -275,46 +250,46 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
         foreach ($this->items as $key => $item) {
             $action = $callback($item, $key, $this->items);
 
-            switch ($action) {
-                case LoopAction::Break():
-                case true:
-                    break 2;
+            if ($action instanceof LoopAction) {
+                switch ($action->getValue()) {
+                    case LoopAction::Break:
+                        break 2;
 
-                case LoopAction::Continue():
-                case false:
-                    continue 2;
+                    case LoopAction::Continue:
+                        continue 2;
+                }
             }
         }
     }
 
     public function notIn(array $items): object
     {
-        $collection = clone $this;
+        $clone = clone $this;
 
-        $items = $this->getResolvedCollectionComparator()
-            ->notIn($collection->items, $items);
+        $clone->items = $this->getResolvedCollectionComparator()
+            ->notIn($clone->items, $items);
 
-        return $this->collect(...$items);
+        return $this->spawn($clone);
     }
 
     public function difference(array $items): object
     {
-        $collection = clone $this;
+        $clone = clone $this;
 
-        $items = $this->getResolvedCollectionComparator()
-            ->difference($collection->items, $items);
+        $clone->items = $this->getResolvedCollectionComparator()
+            ->difference($clone->items, $items);
 
-        return $this->collect(...$items);
+        return $this->spawn($clone);
     }
 
     public function intersection(array $items): object
     {
-        $collection = clone $this;
+        $clone = clone $this;
 
-        $items = $this->getResolvedCollectionComparator()
-            ->intersection($collection->items, $items);
+        $clone->items = $this->getResolvedCollectionComparator()
+            ->intersection($clone->items, $items);
 
-        return $this->collect(...$items);
+        return $this->spawn($clone);
     }
 
     public function matches(array $items): bool
@@ -328,17 +303,10 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
         $clone = clone $this;
 
         foreach ($collections as $collection) {
-            foreach ($collection as $value) {
-                $clone->add($value);
-            }
+            $clone->collect(...$collection);
         }
 
-        return $this->collect(...$clone->items);
-    }
-
-    public function collect(object ...$items): object
-    {
-        return ($this->factory)(...$items);
+        return $this->spawn($clone);
     }
 
     public function toArray(): array
@@ -348,7 +316,7 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
 
     public function toJson(): string
     {
-        return json_encode($this->items, JSON_THROW_ON_ERROR | $this->jsonFlags);
+        return $this->jsonSerializer->serialize($this->items);
     }
 
     public function jsonSerialize(): mixed
@@ -369,14 +337,6 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
     public function count(): int
     {
         return count($this->items);
-    }
-
-    protected function getFilteredItems(callable $callback): array
-    {
-        $collection = clone $this;
-
-        return array_values(array_filter($collection->items, $callback));
-        // return array_merge([], array_filter($collection->items, $callback));
     }
 
     protected function getResolvedCollectionComparator(): CollectionComparatorInterface
@@ -403,6 +363,17 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
         return $comparator;
     }
 
+    protected function getBasicQuery(string $property, string $operator, $value): BasicQuery
+    {
+        return new BasicQuery($this->propertyResolver, $property, $operator, $value);
+    }
+
+    protected function getItemsWhere(string $property, string $operator, $value): array
+    {
+        return $this->getBasicQuery($property, $operator, $value)
+            ->query($this->items);
+    }
+
     protected function objectsMatch(object $a, object $b): bool
     {
         return $this->getResolvedObjectComparator()->matches($a, $b);
@@ -421,35 +392,6 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
         return false;
     }
 
-    protected function itemMeetsCriteria($resolved, string $operator, $value): bool
-    {
-        switch ($operator) {
-            case '=':
-                return $resolved === $value;
-
-            case '!=':
-                return $resolved !== $value;
-
-            case '>':
-                return $resolved > $value;
-
-            case '<':
-                return $resolved < $value;
-
-            case '>=':
-                return $resolved >= $value;
-
-            case '<=':
-                return $resolved <= $value;
-
-            case 'in':
-                return in_array($resolved, $value);
-
-            case 'not in':
-                return !in_array($resolved, $value);
-        }
-    }
-
     protected function resolveValue(object $item, string $property)
     {
         return $this->propertyResolver->resolveProperty($item, $property);
@@ -463,5 +405,19 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
     protected function isMapped(): bool
     {
         return $this->hasIdentifier() && true === $this->map;
+    }
+
+    protected function spawn(self $clone): object
+    {
+        return ($this->generator)($clone);
+    }
+
+    protected function spawnFrom(object ...$items): object
+    {
+        $clone = clone $this;
+
+        $clone->items = $items;
+
+        return $this->spawn($clone);
     }
 }

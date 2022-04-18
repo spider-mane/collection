@@ -10,6 +10,6 @@ use MyCLabs\Enum\Enum;
  */
 final class LoopAction extends Enum
 {
-    private const Break = 'break';
-    private const Continue = 'continue';
+    public const Break = 'break';
+    public const Continue = 'continue';
 }
