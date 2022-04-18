@@ -3,7 +3,6 @@
 namespace WebTheory\Collection\Kernel;
 
 use ArrayIterator;
-use Enum\LoopAction;
 use IteratorAggregate;
 use LogicException;
 use OutOfBoundsException;
@@ -19,6 +18,7 @@ use WebTheory\Collection\Contracts\CollectionKernelInterface;
 use WebTheory\Collection\Contracts\CollectionSorterInterface;
 use WebTheory\Collection\Contracts\ObjectComparatorInterface;
 use WebTheory\Collection\Contracts\OrderInterface;
+use WebTheory\Collection\Enum\LoopAction;
 use WebTheory\Collection\Resolution\PropertyResolver;
 use WebTheory\Collection\Sorting\MapBasedSorter;
 use WebTheory\Collection\Sorting\PropertyBasedSorter;
@@ -35,22 +35,6 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
 
     protected PropertyResolver $propertyResolver;
 
-    protected PropertyBasedSorter $propertyBasedSorter;
-
-    protected MapBasedSorter $mapBasedSorter;
-
-    protected PropertyBasedCollectionComparator $propertyBasedCollectionComparator;
-
-    protected HashBasedCollectionComparator $hashBasedCollectionComparator;
-
-    protected RuntimeIdBasedCollectionComparator $idBasedCollectionComparator;
-
-    protected PropertyBasedObjectComparator $propertyBasedObjectComparator;
-
-    protected HashBasedObjectComparator $hashBasedObjectComparator;
-
-    protected RuntimeIdBasedObjectComparator $idBasedObjectComparator;
-
     /**
      * @var callable
      */
@@ -65,21 +49,9 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
     ) {
         $this->factory = $factory;
         $this->identifier = $identifier;
-        $this->accessors = $accessors;
         $this->map = $map ?? $this->map ?? false;
 
-        $this->propertyResolver = new PropertyResolver($this->accessors);
-
-        $this->propertyBasedSorter = new PropertyBasedSorter($this->propertyResolver);
-        $this->mapBasedSorter = new MapBasedSorter($this->propertyResolver);
-
-        $this->propertyBasedCollectionComparator = new PropertyBasedCollectionComparator($this->propertyResolver);
-        $this->hashBasedCollectionComparator = new HashBasedCollectionComparator($this->propertyResolver);
-        $this->idBasedCollectionComparator = new RuntimeIdBasedCollectionComparator($this->propertyResolver);
-
-        $this->propertyBasedObjectComparator = new PropertyBasedObjectComparator($this->propertyResolver);
-        $this->hashBasedObjectComparator = new HashBasedObjectComparator($this->propertyResolver);
-        $this->idBasedObjectComparator = new RuntimeIdBasedObjectComparator($this->propertyResolver);
+        $this->propertyResolver = new PropertyResolver($accessors);
 
         array_map([$this, 'add'], $items);
     }
@@ -187,7 +159,7 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
 
     public function sortBy(string $property, string $order = OrderInterface::ASC): object
     {
-        $sorter = $this->propertyBasedSorter
+        $sorter = (new PropertyBasedSorter($this->propertyResolver))
             ->setProperty($property);
 
         return $this->sortWith($sorter, $order);
@@ -201,7 +173,7 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
             );
         }
 
-        $sorter = $this->mapBasedSorter
+        $sorter = (new MapBasedSorter($this->propertyResolver))
             ->setMap($map)
             ->setProperty($property);
 
@@ -267,61 +239,21 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
         );
     }
 
-    public function whereEquals(string $property, $value): object
+    public function where(string $property, string $operator, $value): object
     {
         return $this->filter(
-            fn ($item) => $this->resolveValue($item, $property) === $value
+            fn ($item) => $this->itemMeetsCriteria(
+                $this->resolveValue($item, $property),
+                $operator,
+                $value
+            )
         );
     }
 
-    // public function whereNotEquals(string $property, $value): object
-    // {
-    //     return $this->filter(
-    //         fn ($item) => $this->resolveValue($item, $property) !== $value
-    //     );
-    // }
-
-    // public function whereGreaterThan(string $property, $value): object
-    // {
-    //     return $this->filter(
-    //         fn ($item) => $this->resolveValue($item, $property) > $value
-    //     );
-    // }
-
-    // public function whereLessThan(string $property, $value): object
-    // {
-    //     return $this->filter(
-    //         fn ($item) => $this->resolveValue($item, $property) < $value
-    //     );
-    // }
-
-    // public function whereGreaterThanOrEquals(string $property, $value): object
-    // {
-    //     return $this->filter(
-    //         fn ($item) => $this->resolveValue($item, $property) >= $value
-    //     );
-    // }
-
-    // public function whereLessThanOrEquals(string $property, $value): object
-    // {
-    //     return $this->filter(
-    //         fn ($item) => $this->resolveValue($item, $property) <= $value
-    //     );
-    // }
-
-    // public function whereIn(string $property, array $values): object
-    // {
-    //     return $this->filter(
-    //         fn ($item) => in_array($this->resolveValue($item, $property), $values)
-    //     );
-    // }
-
-    // public function whereNotIn(string $property, array $values): object
-    // {
-    //     return $this->filter(
-    //         fn ($item) => !in_array($this->resolveValue($item, $property), $values)
-    //     );
-    // }
+    public function whereEquals(string $property, $value): object
+    {
+        return $this->where($property, '=', $value);
+    }
 
     public function spawn(callable $callback): object
     {
@@ -449,16 +381,26 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
 
     protected function getResolvedCollectionComparator(): CollectionComparatorInterface
     {
-        return ($this->hasIdentifier())
-            ? $this->propertyBasedCollectionComparator->setProperty($this->identifier)
-            : $this->idBasedCollectionComparator;
+        if ($this->hasIdentifier()) {
+            $comparator = new PropertyBasedCollectionComparator($this->propertyResolver);
+            $comparator->setProperty($this->identifier);
+        } else {
+            $comparator = new RuntimeIdBasedCollectionComparator();
+        }
+
+        return $comparator;
     }
 
     protected function getResolvedObjectComparator(): ObjectComparatorInterface
     {
-        return $this->hasIdentifier()
-            ? $this->propertyBasedObjectComparator->setProperty($this->identifier)
-            : $this->idBasedObjectComparator;
+        if ($this->hasIdentifier()) {
+            $comparator = new PropertyBasedObjectComparator($this->propertyResolver);
+            $comparator->setProperty($this->identifier);
+        } else {
+            $comparator = new RuntimeIdBasedObjectComparator();
+        }
+
+        return $comparator;
     }
 
     protected function objectsMatch(object $a, object $b): bool
@@ -477,6 +419,35 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
         }
 
         return false;
+    }
+
+    protected function itemMeetsCriteria($resolved, string $operator, $value): bool
+    {
+        switch ($operator) {
+            case '=':
+                return $resolved === $value;
+
+            case '!=':
+                return $resolved !== $value;
+
+            case '>':
+                return $resolved > $value;
+
+            case '<':
+                return $resolved < $value;
+
+            case '>=':
+                return $resolved >= $value;
+
+            case '<=':
+                return $resolved <= $value;
+
+            case 'in':
+                return in_array($resolved, $value);
+
+            case 'not in':
+                return !in_array($resolved, $value);
+        }
     }
 
     protected function resolveValue(object $item, string $property)

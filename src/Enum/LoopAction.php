@@ -1,13 +1,15 @@
 <?php
 
-namespace Enum;
+namespace WebTheory\Collection\Enum;
 
 use MyCLabs\Enum\Enum;
 
-/** @method static string Break() */
-/** @method static string Continue() */
-class LoopAction extends Enum
+/**
+ * @method static LoopAction Break()
+ * @method static LoopAction Continue()
+ */
+final class LoopAction extends Enum
 {
-    public const Break = 'break';
-    public const Continue = 'continue';
+    private const Break = 'break';
+    private const Continue = 'continue';
 }

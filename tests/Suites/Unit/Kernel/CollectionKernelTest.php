@@ -659,4 +659,20 @@ class CollectionKernelTest extends UnitTestCase
         # Assert
         $this->assertEquals(end($items), $this->sut->last());
     }
+
+    /**
+     * @test
+     */
+    public function it_retrieves_items_that_meet_criteria()
+    {
+        # Arrange
+        $item = $this->getRandomDummyItem();
+        $id = $item->id;
+
+        # Act
+        $result = $this->sut->whereEquals('id', $id);
+
+        # Assert
+        $this->assertContains($item, $result->items);
+    }
 }

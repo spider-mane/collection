@@ -10,7 +10,6 @@ If you currently live in Russia, please read [this message][link-to-russia].
 [![Latest Version on Packagist][badge-packagist-version]][link-packagist]
 [![Build Status][badge-scrutinizer-build]][link-scrutinizer]
 [![Code Coverage][badge-scrutinizer-coverage]][link-scrutinizer]
-[![Quality Score][badge-scrutinizer-quality]][link-scrutinizer]
 [![Total Downloads][badge-packagist-downloads]][link-packagist-downloads]
 [![Software License][badge-license]](LICENSE.md)
 [![Required PHP Version][badge-packagist-php]][link-php]
