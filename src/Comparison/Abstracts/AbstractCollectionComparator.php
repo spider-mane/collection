@@ -8,20 +8,24 @@ abstract class AbstractCollectionComparator implements CollectionComparatorInter
 {
     public function notIn(array $array, array $values): array
     {
-        return array_udiff($array, $values, $this->getComparisonFunction());
+        return array_values(
+            array_udiff($array, $values, $this->getComparisonFunction())
+        );
     }
 
     public function difference(array $array1, array $array2): array
     {
-        return array_merge(
-            $this->notIn($array1, $array2),
-            $this->notIn($array2, $array1)
-        );
+        return [
+            ...$this->notIn($array1, $array2),
+            ...$this->notIn($array2, $array1)
+        ];
     }
 
     public function intersection($array, $values): array
     {
-        return array_uintersect($array, $values, $this->getComparisonFunction());
+        return array_values(
+            array_uintersect($array, $values, $this->getComparisonFunction())
+        );
     }
 
     public function matches(array $array1, array $array2): bool
