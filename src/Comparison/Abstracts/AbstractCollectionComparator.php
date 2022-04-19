@@ -13,10 +13,10 @@ abstract class AbstractCollectionComparator implements CollectionComparatorInter
 
     public function difference(array $array1, array $array2): array
     {
-        return [
-            ...$this->notIn($array1, $array2),
-            ...$this->notIn($array2, $array1),
-        ];
+        return array_merge(
+            $this->notIn($array1, $array2),
+            $this->notIn($array2, $array1)
+        );
     }
 
     public function intersection($array, $values): array

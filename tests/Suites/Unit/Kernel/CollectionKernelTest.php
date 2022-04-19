@@ -746,11 +746,12 @@ class CollectionKernelTest extends UnitTestCase
         $itemIds = $this->dummyList(fn () => $this->unique->slug, $itemCount);
         $items = $this->createDummyItems($itemIds);
         $randomItem = $items[array_rand($items)];
-        $itemSubset = $this->dummyList(fn () => $items[array_rand($items)]->id, $itemCount / 2);
+        $itemSubset = $this->dummyList(fn () => $items[array_rand($items)], $itemCount / 2);
+        $itemSubsetIds = $this->dummyList(fn () => $items[array_rand($items)]->id, $itemCount / 2);
         $extraItems = $this->createDummyItems();
 
         $query = $this->createConfiguredMock(CollectionQueryInterface::class, [
-            'query' => [],
+            'query' => $itemSubset,
         ]);
 
         $sortMap = $this->dummyMap(
@@ -786,19 +787,19 @@ class CollectionKernelTest extends UnitTestCase
             $this->mut('whereIn') => [
                 'items' => $items,
                 'method' => 'whereIn',
-                'args' => ['id', $itemSubset],
+                'args' => ['id', $itemSubsetIds],
             ],
 
             $this->mut('whereNotIn') => [
                 'items' => $items,
                 'method' => 'whereNotIn',
-                'args' => ['id', $itemSubset],
+                'args' => ['id', $itemSubsetIds],
             ],
 
             $this->mut('filter') => [
                 'items' => $items,
                 'method' => 'filter',
-                'args' => [fn () => false],
+                'args' => [fn ($item) => in_array($item, $itemSubset)],
             ],
 
             $this->mut('sortBy') => [
@@ -816,11 +817,11 @@ class CollectionKernelTest extends UnitTestCase
             $this->mut('notIn') => [
                 'items' => $items,
                 'method' => 'notIn',
-                'args' => [$items],
+                'args' => [$itemSubset],
             ],
 
             $this->mut('difference') => [
-                'items' => $items,
+                'items' => [...$items, ...$extraItems],
                 'method' => 'difference',
                 'args' => [$items],
             ],
@@ -831,5 +832,57 @@ class CollectionKernelTest extends UnitTestCase
                 'args' => [$items],
             ],
         ];
+    }
+
+    /**
+     * @test
+     * @dataProvider spawnActionStorageDataProvider
+     */
+    public function it_maintains_storage_schema_when_spawning(
+        array $items,
+        string $method,
+        array $args,
+        bool $mapped
+    ) {
+        # Arrange
+        $sut = new CollectionKernel($items, $this->dummyGenerator, 'id', [], $mapped);
+        $sutArray = $sut->toArray();
+
+        # Act
+        $result = $this->performSystemAction($sut, $method, $args);
+
+        # Smoke
+        $this->assertNotEmpty($result->items);
+
+        # Assert
+        if ($mapped) {
+            $this->assertFalse(array_is_list($result->items), 'Failed asserting array is not a list');
+
+            foreach ($result->items as $key => $item) {
+                if (in_array($item, $sutArray)) {
+                    $this->assertSame($item, $sutArray[$key]);
+                    $this->assertSame($key, array_search($item, $sutArray));
+                }
+            }
+        } else {
+            $this->assertTrue(array_is_list($result->items), 'Failed asserting array is a list');
+        }
+    }
+
+    public function spawnActionStorageDataProvider()
+    {
+        $actions = $this->spawnActionDataProvider();
+        $strategies = ['map', 'list'];
+        $data = [];
+
+        foreach ($actions as $name => $action) {
+            foreach ($strategies as $strategy) {
+                $action['mapped'] = $strategy === 'map';
+
+                $data["$name as $strategy"] = $action;
+            }
+        }
+
+        return $data;
     }
 }

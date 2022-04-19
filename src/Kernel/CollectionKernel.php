@@ -73,7 +73,7 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
 
         $this->propertyResolver = new PropertyResolver($accessors);
 
-        array_map([$this, 'add'], $items);
+        $this->collect(...$items);
     }
 
     public function __serialize(): array
@@ -124,6 +124,23 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
         return false;
     }
 
+    public function contains($item): bool
+    {
+        if (is_object($item)) {
+            return in_array($item, $this->items, true);
+        }
+
+        if ($this->isMapped()) {
+            return isset($this->items[$item]);
+        }
+
+        if ($this->hasIdentifier()) {
+            return !empty($this->find($this->identifier, $item));
+        }
+
+        return false;
+    }
+
     public function first(): object
     {
         return reset($this->items);
@@ -141,23 +158,6 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
     public function hasItems(): bool
     {
         return !empty($this->items);
-    }
-
-    public function contains($item): bool
-    {
-        if (is_object($item)) {
-            return in_array($item, $this->items, true);
-        }
-
-        if ($this->isMapped()) {
-            return isset($this->items[$item]);
-        }
-
-        if ($this->hasIdentifier()) {
-            return !empty($this->find($this->identifier, $item));
-        }
-
-        return false;
     }
 
     public function find(string $property, $value): object
@@ -437,7 +437,8 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
     {
         $clone = clone $this;
 
-        $clone->items = $items;
+        $clone->items = [];
+        $clone->collect(...$items);
 
         return $this->spawnWith($clone);
     }
