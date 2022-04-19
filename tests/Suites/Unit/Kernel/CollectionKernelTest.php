@@ -28,7 +28,7 @@ class CollectionKernelTest extends UnitTestCase
 
     protected array $dummyItems;
 
-    protected Closure $dummyFactory;
+    protected Closure $dummyGenerator;
 
     protected string $identifier = 'id';
 
@@ -37,11 +37,11 @@ class CollectionKernelTest extends UnitTestCase
         parent::setUp();
 
         $this->dummyItems = $this->createDummyItems();
-        $this->dummyFactory = $this->createDummyFactory();
+        $this->dummyGenerator = $this->createDummyFactory();
 
         $this->sut = new CollectionKernel(
             $this->dummyItems,
-            $this->dummyFactory,
+            $this->dummyGenerator,
             'id',
         );
     }
@@ -105,11 +105,6 @@ class CollectionKernelTest extends UnitTestCase
         );
     }
 
-    protected function performSutAction(CollectionKernel $sut, string $method, array $args)
-    {
-        return $sut->{$method}(...array_values($args));
-    }
-
     /**
      * @test
      */
@@ -135,7 +130,7 @@ class CollectionKernelTest extends UnitTestCase
         # Act
         new CollectionKernel(
             $this->dummyItems,
-            $this->dummyFactory,
+            $this->dummyGenerator,
             $identifier
         );
     }
@@ -164,7 +159,7 @@ class CollectionKernelTest extends UnitTestCase
 
         $sut = new CollectionKernel(
             $items,
-            $this->dummyFactory,
+            $this->dummyGenerator,
             'id',
             ['id' => 'getDummyId']
         );
@@ -188,7 +183,7 @@ class CollectionKernelTest extends UnitTestCase
 
         $sut = new CollectionKernel(
             $items,
-            $this->dummyFactory,
+            $this->dummyGenerator,
             'id',
         );
 
@@ -225,7 +220,7 @@ class CollectionKernelTest extends UnitTestCase
             $properties
         );
 
-        $sut = new CollectionKernel($items, $this->dummyFactory, 'id');
+        $sut = new CollectionKernel($items, $this->dummyGenerator, 'id');
 
         # Act
         $mapped = $sut->sortMapped($map, $order, 'id')->items;
@@ -262,7 +257,7 @@ class CollectionKernelTest extends UnitTestCase
         $remove = array_rand($items);
         $item = $items[$remove];
 
-        $sut = new CollectionKernel($items, $this->dummyFactory);
+        $sut = new CollectionKernel($items, $this->dummyGenerator);
 
         # Act
         $sut->remove($item);
@@ -282,7 +277,7 @@ class CollectionKernelTest extends UnitTestCase
         $remove = array_rand($items);
         $item = $items[$remove]->id;
 
-        $sut = new CollectionKernel($items, $this->dummyFactory, 'id');
+        $sut = new CollectionKernel($items, $this->dummyGenerator, 'id');
 
         # Act
         $sut->remove($item);
@@ -309,7 +304,7 @@ class CollectionKernelTest extends UnitTestCase
         $remove = array_rand($items);
         $item = $items[$remove]->id;
 
-        $sut = new CollectionKernel($items, $this->dummyFactory, 'id', [], true);
+        $sut = new CollectionKernel($items, $this->dummyGenerator, 'id', [], true);
 
         # Act
         $sut->remove($item);
@@ -330,7 +325,7 @@ class CollectionKernelTest extends UnitTestCase
         array $args,
         string $message = null
     ) {
-        $sut = new CollectionKernel($items, $this->dummyFactory);
+        $sut = new CollectionKernel($items, $this->dummyGenerator);
 
         # Expect
         $this->expectException(LogicException::class);
@@ -340,7 +335,7 @@ class CollectionKernelTest extends UnitTestCase
         }
 
         # Act
-        $this->performSutAction($sut, $method, $args);
+        $this->performSystemAction($sut, $method, $args);
     }
 
     public function identifierOperationDataProvider(): array
@@ -402,7 +397,7 @@ class CollectionKernelTest extends UnitTestCase
         }
 
         # Act
-        $this->performSutAction($this->sut, $method, $args);
+        $this->performSystemAction($this->sut, $method, $args);
     }
 
     public function orderMethodsDataProvider(): array
@@ -439,7 +434,7 @@ class CollectionKernelTest extends UnitTestCase
 
         $sut = new CollectionKernel(
             $items,
-            $this->dummyFactory,
+            $this->dummyGenerator,
             null,
             ['id' => 'getDummyId']
         );
@@ -474,7 +469,7 @@ class CollectionKernelTest extends UnitTestCase
 
         $difference = [...$items1, ...$items2];
 
-        $sut = new CollectionKernel($completeItems1, $this->dummyFactory, 'id');
+        $sut = new CollectionKernel($completeItems1, $this->dummyGenerator, 'id');
 
         # Act
         $result = $sut->difference($completeItems2);
@@ -502,7 +497,7 @@ class CollectionKernelTest extends UnitTestCase
         $items1 = [...$intersection, ...$this->createDummyItems()];
         $items2 = [...$intersection, ...$this->createDummyItems()];
 
-        $sut = new CollectionKernel($items1, $this->dummyFactory, 'id');
+        $sut = new CollectionKernel($items1, $this->dummyGenerator, 'id');
 
         # Act
         $result = $sut->intersection($items2);
@@ -524,7 +519,7 @@ class CollectionKernelTest extends UnitTestCase
     public function it_determines_whether_or_not_a_passed_collection_matches(bool $matches, array $a, array $b)
     {
         # Arrange
-        $sut = new CollectionKernel($a, $this->dummyFactory, 'id');
+        $sut = new CollectionKernel($a, $this->dummyGenerator, 'id');
 
         # Act
         $result = $sut->matches($b);
@@ -578,7 +573,7 @@ class CollectionKernelTest extends UnitTestCase
     {
         # Arrange
         $items = $hasItems ? $this->createDummyItems() : [];
-        $sut = new CollectionKernel($items, $this->dummyFactory, 'id');
+        $sut = new CollectionKernel($items, $this->dummyGenerator, 'id');
 
         $this->assertSame($hasItems, $sut->hasItems());
     }
@@ -603,7 +598,7 @@ class CollectionKernelTest extends UnitTestCase
 
         $items = $this->createDummyItems($all);
 
-        $sut = new CollectionKernel($items, $this->dummyFactory, 'id');
+        $sut = new CollectionKernel($items, $this->dummyGenerator, 'id');
 
         # Act
         $processed = $sut->whereNotIn('id', $stripped)->items;
@@ -629,7 +624,7 @@ class CollectionKernelTest extends UnitTestCase
 
         $expected = [...$items1, ...$shared, ...$items2];
 
-        $sut1 = new CollectionKernel($completeItems1, $this->dummyFactory);
+        $sut1 = new CollectionKernel($completeItems1, $this->dummyGenerator);
 
         # Act
         $result = $sut1->merge($completeItems2);
@@ -688,7 +683,7 @@ class CollectionKernelTest extends UnitTestCase
      * @test
      * @dataProvider spawnActionDataProvider
      */
-    public function it_spawns_a_concrete_collection_using_a_clone_of_itself_without_modifying_original(
+    public function it_spawns_a_concrete_collection_using_a_clone_of_itself(
         array $items,
         string $method,
         array $args
@@ -706,18 +701,41 @@ class CollectionKernelTest extends UnitTestCase
             return $spawn;
         };
 
-        $sut = new CollectionKernel($items, $generator, 'id');
+        $sut = new CollectionKernel($items, $generator);
 
         # Act
-        $result = $this->performSutAction($sut, $method, $args);
+        $result = $this->performSystemAction($sut, $method, $args);
 
         # Assert
         $this->assertInstanceOf(static::DUMMY_COLLECTION_CLASS, $result);
         $this->assertNotSame($sut, $result->kernel);
+    }
 
+    /**
+     * @test
+     * @dataProvider spawnActionDataProvider
+     */
+    public function it_does_not_mutate_original_array_when_spawning(
+        array $items,
+        string $method,
+        array $args
+    ) {
+        # Arrange
+        $count = count($items);
+
+        $sut = new CollectionKernel($items, $this->dummyGenerator);
+
+        # Act
+        $result = $this->performSystemAction($sut, $method, $args);
+
+        # Smoke
+        $this->assertNotEmpty($items);
         $this->assertNotEmpty($sut->toArray());
+
+        # Assert
         $this->assertSame($items, $sut->toArray());
-        $this->assertNotSame($sut->toArray(), $result->items);
+        $this->assertCount($count, $sut->toArray());
+        $this->assertNotEquals($sut->toArray(), $result->items);
     }
 
     public function spawnActionDataProvider(): array
@@ -728,6 +746,8 @@ class CollectionKernelTest extends UnitTestCase
         $itemIds = $this->dummyList(fn () => $this->unique->slug, $itemCount);
         $items = $this->createDummyItems($itemIds);
         $randomItem = $items[array_rand($items)];
+        $itemSubset = $this->dummyList(fn () => $items[array_rand($items)]->id, $itemCount / 2);
+        $extraItems = $this->createDummyItems();
 
         $query = $this->createConfiguredMock(CollectionQueryInterface::class, [
             'query' => [],
@@ -757,11 +777,23 @@ class CollectionKernelTest extends UnitTestCase
                 'args' => ['id', $randomItem->id],
             ],
 
-            // $this->mut('whereNotEquals') => [
-            //     'items' => $items,
-            //     'method' => 'whereNotEquals',
-            //     'args' => ['id', $randomItem->id],
-            // ],
+            $this->mut('whereNotEquals') => [
+                'items' => $items,
+                'method' => 'whereNotEquals',
+                'args' => ['id', $randomItem->id],
+            ],
+
+            $this->mut('whereIn') => [
+                'items' => $items,
+                'method' => 'whereIn',
+                'args' => ['id', $itemSubset],
+            ],
+
+            $this->mut('whereNotIn') => [
+                'items' => $items,
+                'method' => 'whereNotIn',
+                'args' => ['id', $itemSubset],
+            ],
 
             $this->mut('filter') => [
                 'items' => $items,
@@ -769,10 +801,34 @@ class CollectionKernelTest extends UnitTestCase
                 'args' => [fn () => false],
             ],
 
+            $this->mut('sortBy') => [
+                'items' => $items,
+                'method' => 'sortBy',
+                'args' => ['id'],
+            ],
+
             $this->mut('sortMapped') => [
                 'items' => $items,
                 'method' => 'sortMapped',
-                'args' => [$sortMap, Order::ASC],
+                'args' => [$sortMap, Order::ASC, 'id'],
+            ],
+
+            $this->mut('notIn') => [
+                'items' => $items,
+                'method' => 'notIn',
+                'args' => [$items],
+            ],
+
+            $this->mut('difference') => [
+                'items' => $items,
+                'method' => 'difference',
+                'args' => [$items],
+            ],
+
+            $this->mut('intersection') => [
+                'items' => [...$items, ...$extraItems],
+                'method' => 'intersection',
+                'args' => [$items],
             ],
         ];
     }

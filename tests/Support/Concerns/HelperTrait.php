@@ -13,6 +13,15 @@ trait HelperTrait
     }
 
     /**
+     * Call a method on an object with provided arguments. Helpful for tests
+     * whose actions are defined by data providers.
+     */
+    protected function performSystemAction(object $object, string $method, array $args)
+    {
+        return $object->{$method}(...array_values($args));
+    }
+
+    /**
      * Create an indexed array of specified count using a callback to generate
      * each entry.
      */
