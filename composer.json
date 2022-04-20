@@ -1,7 +1,7 @@
 {
   "name": "webtheory/collection",
   "type": "library",
-  "description": "Create typed collections and defer logic to collection kernel class",
+  "description": "Create typed collections and defer logic to collection kernel",
   "homepage": "https://github.com/spider-mane/collection",
   "license": "MIT",
   "authors": [

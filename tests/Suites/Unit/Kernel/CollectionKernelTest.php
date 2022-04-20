@@ -37,7 +37,7 @@ class CollectionKernelTest extends UnitTestCase
         parent::setUp();
 
         $this->dummyItems = $this->createDummyItems();
-        $this->dummyGenerator = $this->createDummyFactory();
+        $this->dummyGenerator = $this->createDummyGenerator();
 
         $this->sut = new CollectionKernel(
             $this->dummyItems,
@@ -46,7 +46,7 @@ class CollectionKernelTest extends UnitTestCase
         );
     }
 
-    protected function createDummyFactory(): Closure
+    protected function createDummyGenerator(): Closure
     {
         return function (CollectionKernel $kernel) {
             $collection = $this->getMockBuilder(stdClass::class)
@@ -165,7 +165,7 @@ class CollectionKernelTest extends UnitTestCase
         );
 
         # Act
-        $result = $sut->find('id', $itemId);
+        $result = $sut->findBy('id', $itemId);
 
         # Assert
         $this->assertEquals($item, $result);
@@ -223,7 +223,7 @@ class CollectionKernelTest extends UnitTestCase
         $sut = new CollectionKernel($items, $this->dummyGenerator, 'id');
 
         # Act
-        $mapped = $sut->sortMapped($map, $order, 'id')->items;
+        $mapped = $sut->sortMapped($map, 'id', $order)->items;
         $results = array_map(fn ($item) => $item->id, $mapped);
 
         Order::DESC === $order
@@ -319,54 +319,54 @@ class CollectionKernelTest extends UnitTestCase
      * @test
      * @dataProvider identifierOperationDataProvider
      */
-    public function it_throws_proper_exception_if_an_operation_requiring_an_identifier_is_attempted_without_one(
-        array $items,
-        string $method,
-        array $args,
-        string $message = null
-    ) {
-        $sut = new CollectionKernel($items, $this->dummyGenerator);
+    // public function it_throws_proper_exception_if_an_operation_requiring_an_identifier_is_attempted_without_one(
+    //     array $items,
+    //     string $method,
+    //     array $args,
+    //     string $message = null
+    // ) {
+    //     $sut = new CollectionKernel($items, $this->dummyGenerator);
 
-        # Expect
-        $this->expectException(LogicException::class);
+    //     # Expect
+    //     $this->expectException(LogicException::class);
 
-        if (isset($message)) {
-            $this->expectExceptionMessage($message);
-        }
+    //     if (isset($message)) {
+    //         $this->expectExceptionMessage($message);
+    //     }
 
-        # Act
-        $this->performSystemAction($sut, $method, $args);
-    }
+    //     # Act
+    //     $this->performSystemAction($sut, $method, $args);
+    // }
 
-    public function identifierOperationDataProvider(): array
-    {
-        $this->initFaker();
+    // public function identifierOperationDataProvider(): array
+    // {
+    //     $this->initFaker();
 
-        $genericMessageTemplate = "Use of " . static::SUT_CLASS . "::%s requires an identifier.";
+    //     $genericMessageTemplate = "Use of " . static::SUT_CLASS . "::%s requires an identifier.";
 
-        $itemCount = 10;
-        $itemIds = $this->dummyList(fn () => $this->unique->slug, $itemCount);
-        $items = $this->createDummyItems($itemIds);
-        $randomItem = $items[array_rand($items)];
+    //     $itemCount = 10;
+    //     $itemIds = $this->dummyList(fn () => $this->unique->slug, $itemCount);
+    //     $items = $this->createDummyItems($itemIds);
+    //     $randomItem = $items[array_rand($items)];
 
-        $sortMap = $this->createDummySortMap($itemIds);
+    //     $sortMap = $this->createDummySortMap($itemIds);
 
-        return [
-            $this->mut('findById') => [
-                'items' => $items,
-                'method' => 'findById',
-                'args' => [$randomItem->id],
-                'message' => sprintf($genericMessageTemplate, 'findById'),
-            ],
+    //     return [
+    //         // $this->mut('findById') => [
+    //         //     'items' => $items,
+    //         //     'method' => 'findById',
+    //         //     'args' => [$randomItem->id],
+    //         //     'message' => sprintf($genericMessageTemplate, 'findById'),
+    //         // ],
 
-            $this->mut('sortMapped') => [
-                'items' => $items,
-                'method' => 'sortMapped',
-                'args' => [$sortMap, Order::ASC, null],
-                'message' => 'Cannot sort by map without property or item identifier set.',
-            ],
-        ];
-    }
+    //         // $this->mut('sortMapped') => [
+    //         //     'items' => $items,
+    //         //     'method' => 'sortMapped',
+    //         //     'args' => [$sortMap, Order::ASC, null],
+    //         //     'message' => 'Cannot sort by map without property or item identifier set.',
+    //         // ],
+    //     ];
+    // }
 
     /**
      * @test
@@ -377,7 +377,7 @@ class CollectionKernelTest extends UnitTestCase
         $this->expectException(OutOfBoundsException::class);
 
         # Act
-        $this->sut->findById($this->unique->slug);
+        $this->sut->findBy('id', $this->unique->slug);
     }
 
     /**
@@ -416,7 +416,7 @@ class CollectionKernelTest extends UnitTestCase
 
             $this->mut('sortMapped') => [
                 'method' => 'sortMapped',
-                'args' => [$sortMap, $invalidOrder, 'id'],
+                'args' => [$sortMap, 'id', $invalidOrder],
             ],
         ];
     }
@@ -472,7 +472,7 @@ class CollectionKernelTest extends UnitTestCase
         $sut = new CollectionKernel($completeItems1, $this->dummyGenerator, 'id');
 
         # Act
-        $result = $sut->difference($completeItems2);
+        $result = $sut->contrast($completeItems2);
 
         // dd($diff, $result->items);
 
@@ -500,7 +500,7 @@ class CollectionKernelTest extends UnitTestCase
         $sut = new CollectionKernel($items1, $this->dummyGenerator, 'id');
 
         # Act
-        $result = $sut->intersection($items2);
+        $result = $sut->intersect($items2);
 
         # Smoke
         foreach ([$intersection, $items1, $items2] as $items) {
@@ -601,7 +601,7 @@ class CollectionKernelTest extends UnitTestCase
         $sut = new CollectionKernel($items, $this->dummyGenerator, 'id');
 
         # Act
-        $processed = $sut->whereNotIn('id', $stripped)->items;
+        $processed = $sut->where('id', 'not in', $stripped)->items;
         $result = array_map(fn ($item) => $item->id, $processed);
 
         # Assert
@@ -673,7 +673,7 @@ class CollectionKernelTest extends UnitTestCase
         $id = $item->id;
 
         # Act
-        $result = $this->sut->whereEquals('id', $id);
+        $result = $this->sut->where('id', '=', $id);
 
         # Assert
         $this->assertContains($item, $result->items);
@@ -772,29 +772,29 @@ class CollectionKernelTest extends UnitTestCase
                 'args' => ['id', '=', $randomItem->id],
             ],
 
-            $this->mut('whereEquals') => [
-                'items' => $items,
-                'method' => 'whereEquals',
-                'args' => ['id', $randomItem->id],
-            ],
+            // $this->mut('whereEquals') => [
+            //     'items' => $items,
+            //     'method' => 'whereEquals',
+            //     'args' => ['id', $randomItem->id],
+            // ],
 
-            $this->mut('whereNotEquals') => [
-                'items' => $items,
-                'method' => 'whereNotEquals',
-                'args' => ['id', $randomItem->id],
-            ],
+            // $this->mut('whereNotEquals') => [
+            //     'items' => $items,
+            //     'method' => 'whereNotEquals',
+            //     'args' => ['id', $randomItem->id],
+            // ],
 
-            $this->mut('whereIn') => [
-                'items' => $items,
-                'method' => 'whereIn',
-                'args' => ['id', $itemSubsetIds],
-            ],
+            // $this->mut('whereIn') => [
+            //     'items' => $items,
+            //     'method' => 'whereIn',
+            //     'args' => ['id', $itemSubsetIds],
+            // ],
 
-            $this->mut('whereNotIn') => [
-                'items' => $items,
-                'method' => 'whereNotIn',
-                'args' => ['id', $itemSubsetIds],
-            ],
+            // $this->mut('whereNotIn') => [
+            //     'items' => $items,
+            //     'method' => 'whereNotIn',
+            //     'args' => ['id', $itemSubsetIds],
+            // ],
 
             $this->mut('filter') => [
                 'items' => $items,
@@ -811,24 +811,24 @@ class CollectionKernelTest extends UnitTestCase
             $this->mut('sortMapped') => [
                 'items' => $items,
                 'method' => 'sortMapped',
-                'args' => [$sortMap, Order::ASC, 'id'],
+                'args' => [$sortMap, 'id'],
             ],
 
-            $this->mut('notIn') => [
+            $this->mut('diff') => [
                 'items' => $items,
-                'method' => 'notIn',
+                'method' => 'diff',
                 'args' => [$itemSubset],
             ],
 
-            $this->mut('difference') => [
+            $this->mut('contrast') => [
                 'items' => [...$items, ...$extraItems],
-                'method' => 'difference',
+                'method' => 'contrast',
                 'args' => [$items],
             ],
 
-            $this->mut('intersection') => [
+            $this->mut('intersect') => [
                 'items' => [...$items, ...$extraItems],
-                'method' => 'intersection',
+                'method' => 'intersect',
                 'args' => [$items],
             ],
         ];
@@ -884,5 +884,41 @@ class CollectionKernelTest extends UnitTestCase
         }
 
         return $data;
+    }
+
+    /**
+     * @test
+     * @dataProvider iterationDataProvider
+     */
+    public function it_iterates_over_each_item_in_the_collection_using_provided_callback(string $method)
+    {
+        # Arrange
+        $mockMethod = $this->fake->word;
+        $callback = fn ($item) => $item->$mockMethod();
+        $items = $this->dummyList(
+            fn () => $this->getMockBuilder(stdClass::class)
+                ->addMethods([$mockMethod])
+                ->getMock(),
+            5
+        );
+
+        $sut = new CollectionKernel($items, $this->dummyGenerator);
+
+        # Expect
+        foreach ($items as $item) {
+            $item->expects($this->once())->method($mockMethod);
+        }
+
+        # Act
+        $this->performSystemAction($sut, $method, [$callback]);
+    }
+
+    public function iterationDataProvider(): array
+    {
+        return [
+            $this->mut('map') => ['map'],
+            $this->mut('walk') => ['walk'],
+            $this->mut('foreach') => ['foreach'],
+        ];
     }
 }

@@ -9,9 +9,10 @@ class Operations implements OperationProviderInterface
 {
     protected array $operators;
 
-    public function __construct(array $operators = [])
+    public function __construct(array $operators = [], bool $useDefaults = true)
     {
-        $this->operators = $operators + $this->defaultOperators();
+        $this->operators = $operators
+            + ($useDefaults ? $this->defaultOperators() : []);
     }
 
     public function operate($value1, string $operator, $value2): bool

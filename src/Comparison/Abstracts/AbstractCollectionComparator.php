@@ -6,22 +6,22 @@ use WebTheory\Collection\Contracts\CollectionComparatorInterface;
 
 abstract class AbstractCollectionComparator implements CollectionComparatorInterface
 {
-    public function notIn(array $array, array $values): array
+    public function diff(array $array, array $values): array
     {
         return array_values(
             array_udiff($array, $values, $this->getComparisonFunction())
         );
     }
 
-    public function difference(array $array1, array $array2): array
+    public function contrast(array $array1, array $array2): array
     {
         return [
-            ...$this->notIn($array1, $array2),
-            ...$this->notIn($array2, $array1)
+            ...$this->diff($array1, $array2),
+            ...$this->diff($array2, $array1),
         ];
     }
 
-    public function intersection($array, $values): array
+    public function intersect($array, $values): array
     {
         return array_values(
             array_uintersect($array, $values, $this->getComparisonFunction())
@@ -30,7 +30,7 @@ abstract class AbstractCollectionComparator implements CollectionComparatorInter
 
     public function matches(array $array1, array $array2): bool
     {
-        return empty($this->difference($array1, $array2));
+        return empty($this->contrast($array1, $array2));
     }
 
     protected function stripDuplicates(array $array): array
@@ -38,7 +38,7 @@ abstract class AbstractCollectionComparator implements CollectionComparatorInter
         return array_unique($array, SORT_REGULAR);
     }
 
-    protected function whatEvenIsThis(array $a, array $b): array
+    protected function whatEvenIsThis(array $array1, array $array2): array
     {
         /*
          if both primary and secondary are empty this will return false
@@ -46,8 +46,8 @@ abstract class AbstractCollectionComparator implements CollectionComparatorInter
          if the first array provided is empty itself. if both arrays are
          empty this will return an empty array as there is no difference.
          */
-        return !empty($a)
-            ? $this->notIn($a, $b)
-            : $this->notIn($b, $a);
+        return !empty($array1)
+            ? $this->diff($array1, $array2)
+            : $this->diff($array2, $array1);
     }
 }
