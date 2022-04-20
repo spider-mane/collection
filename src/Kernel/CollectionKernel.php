@@ -233,7 +233,7 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
     public function merge(array ...$collections): object
     {
         return $this->spawnFrom(
-            ...array_merge($this->items, ...array_values($collections))
+            ...array_merge(array_values($this->items), ...$collections)
         );
     }
 
