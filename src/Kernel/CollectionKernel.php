@@ -5,6 +5,7 @@ namespace WebTheory\Collection\Kernel;
 use ArrayIterator;
 use IteratorAggregate;
 use OutOfBoundsException;
+use ReturnTypeWillChange;
 use Traversable;
 use WebTheory\Collection\Comparison\PropertyBasedCollectionComparator;
 use WebTheory\Collection\Comparison\PropertyBasedObjectComparator;
@@ -231,13 +232,9 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
 
     public function merge(array ...$collections): object
     {
-        $clone = clone $this;
-
-        foreach ($collections as $collection) {
-            $clone->collect(...$collection);
-        }
-
-        return $this->spawnWith($clone);
+        return $this->spawnFrom(
+            ...array_merge($this->items, ...array_values($collections))
+        );
     }
 
     public function sortWith(CollectionSorterInterface $sorter, string $order = Order::Asc): object
@@ -305,7 +302,8 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
         return count($this->items);
     }
 
-    public function jsonSerialize(): mixed
+    #[ReturnTypeWillChange]
+    public function jsonSerialize()
     {
         return $this->items;
     }

@@ -2,31 +2,41 @@
 
 declare(strict_types=1);
 
-use Rector\Core\Configuration\Option;
+use Rector\Config\RectorConfig;
 use Rector\Php70\Rector\MethodCall\ThisCallOnStaticMethodToStaticCallRector;
 use Rector\Php74\Rector\LNumber\AddLiteralSeparatorToNumberRector;
+use Rector\Php74\Rector\Property\RestoreDefaultNullToNullableTypePropertyRector;
 use Rector\Php74\Rector\Property\TypedPropertyRector;
 use Rector\Set\ValueObject\LevelSetList;
-use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
+use Rector\Transform\Rector\ClassMethod\ReturnTypeWillChangeRector;
 
-return static function (ContainerConfigurator $loader): void {
-    $rules = $loader->services();
-    $options = $loader->parameters();
-
+return static function (RectorConfig $config): void {
     # Options
-    $options->set(Option::PATHS, [
+    $config->paths([
         __DIR__ . '/src',
         __DIR__ . '/tests',
     ]);
-    $options->set(Option::AUTO_IMPORT_NAMES, true);
+
+    $config->importNames();
+
+    # Sets
+    $config->sets([LevelSetList::UP_TO_PHP_74]);
+
+    # Remove from sets
+    $config->skip([
+        AddLiteralSeparatorToNumberRector::class,
+        RestoreDefaultNullToNullableTypePropertyRector::class,
+        ThisCallOnStaticMethodToStaticCallRector::class
+    ]);
 
     # PHP Rules
-    $loader->import(LevelSetList::UP_TO_PHP_74);
+    $config->ruleWithConfiguration(ReturnTypeWillChangeRector::class, [
+        JsonSerializable::class => [
+            'JsonSerialize',
+        ],
+    ]);
 
-    $rules->remove(AddLiteralSeparatorToNumberRector::class);
-    $rules->remove(ThisCallOnStaticMethodToStaticCallRector::class);
-
-    $rules->set(TypedPropertyRector::class)->configure([
+    $config->ruleWithConfiguration(TypedPropertyRector::class, [
         TypedPropertyRector::INLINE_PUBLIC => true
     ]);
 };

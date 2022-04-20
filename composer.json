@@ -38,7 +38,6 @@
     "rector/rector": "^0.12.20",
     "spatie/phpunit-watcher": "^1.12",
     "squizlabs/php_codesniffer": "^3.5",
-    "symfony/dependency-injection": "^5.4",
     "symfony/thanks": "^1.1",
     "vimeo/psalm": "^4.7",
     "vlucas/phpdotenv": "^5.4",
@@ -58,10 +57,10 @@
     "asset": "npm --prefix assets",
     "check": "vendor/bin/phpcs",
     "collect": "vendor/bin/var-dump-server",
-    "correct": "vendor/bin/phpcbf",
     "hooks": "vendor/bin/captainhook",
     "inspect": "vendor/bin/psalm",
     "play": ".playground/console.php",
+    "rector": "vendor/bin/rector process",
     "shell": "vendor/bin/psysh",
     "test": "vendor/bin/phpunit",
     "test:acceptance": "@test --testsuite acceptance",
@@ -82,9 +81,8 @@
       "php bin/make-playground"
     ],
     "style": [
-      "vendor/bin/rector process",
       "vendor/bin/php-cs-fixer fix --verbose",
-      "@correct"
+      "vendor/bin/phpcbf"
     ]
   },
   "config": {

@@ -921,4 +921,26 @@ class CollectionKernelTest extends UnitTestCase
             $this->mut('foreach') => ['foreach'],
         ];
     }
+
+    /**
+     * @test
+     */
+    public function it_serializes_items_as_json()
+    {
+        $this->assertSame(
+            json_encode($this->dummyItems, JSON_THROW_ON_ERROR),
+            $this->sut->toJson()
+        );
+    }
+
+    /**
+     * @test
+     */
+    public function it_is_json_serializable()
+    {
+        $this->assertSame(
+            json_encode($this->dummyItems, JSON_THROW_ON_ERROR),
+            json_encode($this->sut, JSON_THROW_ON_ERROR)
+        );
+    }
 }
