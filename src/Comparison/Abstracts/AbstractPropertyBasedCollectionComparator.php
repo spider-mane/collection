@@ -10,15 +10,9 @@ abstract class AbstractPropertyBasedCollectionComparator extends AbstractCollect
 {
     use ResolvesPropertyValueTrait;
 
-    public function __construct(PropertyResolverInterface $propertyResolver)
+    public function __construct(PropertyResolverInterface $propertyResolver, string $property)
     {
         $this->propertyResolver = $propertyResolver;
-    }
-
-    public function setProperty(string $property): AbstractPropertyBasedCollectionComparator
-    {
         $this->property = $property;
-
-        return $this;
     }
 }

@@ -165,7 +165,7 @@ class CollectionKernelTest extends UnitTestCase
         );
 
         # Act
-        $result = $sut->findBy('id', $itemId);
+        $result = $sut->firstWhere('id', '=', $itemId);
 
         # Assert
         $this->assertEquals($item, $result);
@@ -377,7 +377,7 @@ class CollectionKernelTest extends UnitTestCase
         $this->expectException(OutOfBoundsException::class);
 
         # Act
-        $this->sut->findBy('id', $this->unique->slug);
+        $this->sut->firstWhere('id', '=', $this->unique->slug);
     }
 
     /**
@@ -942,5 +942,96 @@ class CollectionKernelTest extends UnitTestCase
             json_encode($this->dummyItems, JSON_THROW_ON_ERROR),
             json_encode($this->sut, JSON_THROW_ON_ERROR)
         );
+    }
+
+    /**
+     * @test
+     */
+    public function it_is_serialized_as_the_stored_array()
+    {
+        $this->assertSame($this->dummyItems, $this->sut->__serialize());
+    }
+
+    /**
+     * @test
+     * @dataProvider containsDataProvider
+     */
+    public function it_accurately_reports_whether_or_not_it_contains_an_item(
+        array $items,
+        $seek,
+        bool $identifier,
+        bool $mapped,
+        bool $contained
+    ) {
+        # Arrange
+        $sut = new CollectionKernel(
+            $items,
+            $this->dummyGenerator,
+            $identifier ? 'id' : null,
+            [],
+            $mapped
+        );
+
+        # Act
+        $result = $sut->contains($seek);
+
+        # Assert
+        $contained ? $this->assertTrue($result) : $this->assertFalse($result);
+    }
+
+    public function containsDataProvider(): array
+    {
+        $this->initFaker();
+
+        $count = 5;
+        $ids = $this->dummyList(fn () => $this->unique->slug, $count);
+        $items = $this->createDummyItems($ids);
+        $randomItem = $items[array_rand($items)];
+        $randomId = $randomItem->id;
+
+        return [
+            'true as auto-keyed map' => [
+                'items' => $items,
+                'seek' => $randomId,
+                'identifier' => true,
+                'mapped' => true,
+                'contained' => true,
+            ],
+            'false as auto-keyed map' => [
+                'items' => $items,
+                'seek' => $this->unique->slug,
+                'identifier' => true,
+                'mapped' => true,
+                'contained' => false,
+            ],
+            'true as identifiable list' => [
+                'items' => $items,
+                'seek' => $randomId,
+                'identifier' => true,
+                'mapped' => false,
+                'contained' => true,
+            ],
+            'false as identifiable list' => [
+                'items' => $items,
+                'seek' => $this->unique->slug,
+                'identifier' => true,
+                'mapped' => false,
+                'contained' => false,
+            ],
+            'true as standard list' => [
+                'items' => $items,
+                'seek' => $randomItem,
+                'identifier' => false,
+                'mapped' => false,
+                'contained' => true,
+            ],
+            'false as standard list' => [
+                'items' => $items,
+                'seek' => $this->createDummyItem($this->fake->slug),
+                'identifier' => false,
+                'mapped' => false,
+                'contained' => false,
+            ],
+        ];
     }
 }

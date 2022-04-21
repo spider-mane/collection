@@ -6,6 +6,7 @@
 ################################################################################
 
 $publicDir = "public";
+$location = ".playground";
 $contexts = [];
 
 ################################################################################
@@ -17,17 +18,17 @@ $content = <<<PHP
 
 declare(strict_types=1);
 
-require_once dirname(__DIR__) . '/vendor/autoload.php';
+require_once dirname(__DIR__) . '/tests/bootstrap.php';
 
 /**
- *==========================================================================
+ *==============================================================================
  * PHP Playground
- *==========================================================================
+ *==============================================================================
  *
- * You can use this file as you would a REPL (code pen). To avoid having to
- * comment out large sections of code, wrap each example in a simple if
- * statement. Set the condition to false to disable and delete when no longer
- * needed.
+ * This is a burner file for when you just need to explore what happens with
+ * random bits code. To avoid having to comment out large sections of code, wrap
+ * each example in a simple if statement. Set the condition to false to disable
+ * and delete when no longer needed.
  *
  */
 
@@ -47,15 +48,15 @@ if (!file_exists($path = "$root/.playground")) {
   mkdir($path);
 }
 
-foreach (['web', 'console', ...$contexts] as $context) {
+foreach (['browser', 'console', ...$contexts] as $context) {
   $file = "$path/$context.php";
 
   if (!file_exists($file)) {
     file_put_contents($file, $content);
   }
 
-  if ('web' === $context && file_exists($publicDir = "$root/$publicDir")) {
-    if (file_exists($link = "$publicDir/.playground.php")) {
+  if ('browser' === $context && file_exists($publicDir = "$root/$publicDir")) {
+    if (file_exists($link = "$publicDir/$location.php")) {
       unlink($link);
     }
 

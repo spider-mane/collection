@@ -13,8 +13,10 @@ class PropertyBasedCollectionComparator extends AbstractPropertyBasedCollectionC
 
     protected function getObjectComparator(): ObjectComparatorInterface
     {
-        $comparator = new PropertyBasedObjectComparator($this->propertyResolver);
-        $comparator->setProperty($this->property);
+        $comparator = new PropertyBasedObjectComparator(
+            $this->propertyResolver,
+            $this->property
+        );
 
         return $comparator;
     }

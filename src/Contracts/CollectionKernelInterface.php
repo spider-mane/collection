@@ -17,19 +17,21 @@ interface CollectionKernelInterface extends Traversable, Countable, JsonSerializ
 
     public function contains($item): bool;
 
-    public function first(): object;
-
-    public function last(): object;
-
     public function hasItems(): bool;
 
     public function column(string $property): array;
 
-    public function findBy(string $property, $value): object;
+    public function first(): object;
+
+    public function last(): object;
 
     public function query(CollectionQueryInterface $query): object;
 
     public function where(string $property, string $operator, $value): object;
+
+    public function hasWhere(string $property, string $operator, $value): bool;
+
+    public function firstWhere(string $property, string $operator, $value): object;
 
     public function filter(callable $callback): object;
 
