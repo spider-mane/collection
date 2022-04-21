@@ -371,14 +371,14 @@ class CollectionKernelTest extends UnitTestCase
     /**
      * @test
      */
-    public function it_throws_proper_exception_if_an_item_search_returns_nothing()
-    {
-        # Expect
-        $this->expectException(OutOfBoundsException::class);
+    // public function it_throws_proper_exception_if_an_item_search_returns_nothing()
+    // {
+    //     # Expect
+    //     $this->expectException(OutOfBoundsException::class);
 
-        # Act
-        $this->sut->firstWhere('id', '=', $this->unique->slug);
-    }
+    //     # Act
+    //     $this->sut->firstWhere('id', '=', $this->unique->slug);
+    // }
 
     /**
      * @test

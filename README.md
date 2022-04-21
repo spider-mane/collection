@@ -9,6 +9,7 @@ If you currently live in Russia, please read [this message][link-to-russia].
 [![Stand With Ukraine][badge-support-ukraine]][link-support-ukraine]
 [![Latest Version on Packagist][badge-packagist-version]][link-packagist]
 [![Build Status][badge-scrutinizer-build]][link-scrutinizer]
+[![Code Quality][badge-scrutinizer-quality]][link-scrutinizer]
 [![Code Coverage][badge-scrutinizer-coverage]][link-scrutinizer]
 [![Total Downloads][badge-packagist-downloads]][link-packagist-downloads]
 [![Software License][badge-license]](LICENSE.md)

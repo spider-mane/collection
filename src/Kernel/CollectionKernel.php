@@ -5,8 +5,6 @@ namespace WebTheory\Collection\Kernel;
 use ArrayIterator;
 use Closure;
 use IteratorAggregate;
-use OutOfBoundsException;
-use Throwable;
 use Traversable;
 use WebTheory\Collection\Comparison\PropertyBasedCollectionComparator;
 use WebTheory\Collection\Comparison\PropertyBasedObjectComparator;
@@ -47,18 +45,13 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
      */
     protected Closure $generator;
 
-    /**
-     * Whether or not to map the identifier to items in the collection.
-     */
-    protected bool $map = false;
-
     protected ArrayDriverInterface $driver;
 
     protected PropertyResolverInterface $propertyResolver;
 
     protected CollectionComparatorInterface $aggregateComparator;
 
-    protected OperationProviderInterface $operationsProvider;
+    protected OperationProviderInterface $operationProvider;
 
     protected JsonSerializerInterface $jsonSerializer;
 
@@ -67,14 +60,14 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
         Closure $generator,
         ?string $identifier = null,
         array $accessors = [],
-        ?bool $map = false,
+        ?bool $mapToIdentifier = false,
         ?JsonSerializerInterface $jsonSerializer = null,
         ?OperationProviderInterface $operations = null
     ) {
         $this->generator = $generator;
 
         $this->jsonSerializer = $jsonSerializer ?? new BasicJsonSerializer();
-        $this->operationsProvider = $operations ?? new Operations();
+        $this->operationProvider = $operations ?? new Operations();
 
         $this->propertyResolver = new PropertyResolver($accessors);
 
@@ -86,7 +79,7 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
             ? new PropertyBasedObjectComparator($this->propertyResolver, $identifier)
             : new RuntimeIdBasedObjectComparator();
 
-        if ($identifier && $map) {
+        if ($identifier && $mapToIdentifier) {
             $this->driver = new AutoKeyedMap($identifier, $this->propertyResolver, $objectComparator);
         } elseif ($identifier) {
             $this->driver = new IdentifiableItemList($identifier, $this->propertyResolver, $objectComparator);
@@ -146,14 +139,11 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
         return !empty($this->getItemsWhere($property, $operator, $value));
     }
 
-    public function firstWhere(string $property, string $operator, $value): object
+    public function firstWhere(string $property, string $operator, $value): ?object
     {
         $items = $this->getItemsWhere($property, $operator, $value);
-        $exception = new OutOfBoundsException(
-            "Cannot find item where {$property} is equal to {$value}."
-        );
 
-        return $this->extractFirstItem($items, $exception);
+        return reset($items) ?: null;
     }
 
     public function query(CollectionQueryInterface $query): object
@@ -263,6 +253,11 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
         $this->loop(new ForeachLoop(), $callback);
     }
 
+    public function values(): array
+    {
+        return array_values($this->items);
+    }
+
     public function toArray(): array
     {
         return $this->items;
@@ -295,22 +290,13 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
             $property,
             $operator,
             $value,
-            $this->operationsProvider
+            $this->operationProvider
         );
     }
 
     protected function performQuery(CollectionQueryInterface $query): array
     {
         return $query->query($this->items);
-    }
-
-    protected function extractFirstItem(array $items, Throwable $throwable): object
-    {
-        try {
-            return $items[0];
-        } catch (Throwable $e) {
-            throw $throwable;
-        }
     }
 
     protected function getPropertyValue(object $item, string $property)

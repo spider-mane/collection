@@ -31,7 +31,7 @@ interface CollectionKernelInterface extends Traversable, Countable, JsonSerializ
 
     public function hasWhere(string $property, string $operator, $value): bool;
 
-    public function firstWhere(string $property, string $operator, $value): object;
+    public function firstWhere(string $property, string $operator, $value): ?object;
 
     public function filter(callable $callback): object;
 
@@ -60,6 +60,8 @@ interface CollectionKernelInterface extends Traversable, Countable, JsonSerializ
     public function loop(LoopInterface $loop, callable $callback): void;
 
     public function foreach(callable $callback): void;
+
+    public function values(): array;
 
     public function toArray(): array;
 
