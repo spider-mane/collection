@@ -1,28 +1,27 @@
 <?php
 
-namespace WebTheory\Collection\Kernel;
+namespace WebTheory\Collection\Kernel\Builder;
 
+use Closure;
 use WebTheory\Collection\Contracts\JsonSerializerInterface;
+use WebTheory\Collection\Kernel\CollectionKernel;
 use WebTheory\Collection\Resolution\PropertyResolver;
 
 class CollectionKernelBuilder
 {
     protected array $items = [];
 
-    /**
-     * @var callable
-     */
-    protected $factory;
+    protected Closure $factory;
+
+    protected array $accessors = [];
 
     protected ?string $identifier = null;
 
-    protected bool $map = false;
+    protected bool $mapToIdentifier = false;
 
     protected JsonSerializerInterface $jsonSerializer;
 
     protected PropertyResolver $propertyResolver;
-
-    protected array $accessors = [];
 
     public function withItems(array $items): self
     {
@@ -54,7 +53,7 @@ class CollectionKernelBuilder
 
     public function withMapped(bool $map): self
     {
-        $this->map = $map;
+        $this->mapToIdentifier = $map;
 
         return $this;
     }
@@ -80,7 +79,7 @@ class CollectionKernelBuilder
             $this->factory,
             $this->identifier,
             $this->accessors,
-            $this->map,
+            $this->mapToIdentifier,
             $this->jsonSerializer,
         );
     }

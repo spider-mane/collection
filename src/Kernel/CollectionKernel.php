@@ -6,10 +6,6 @@ use ArrayIterator;
 use Closure;
 use IteratorAggregate;
 use Traversable;
-use WebTheory\Collection\Comparison\PropertyBasedCollectionComparator;
-use WebTheory\Collection\Comparison\PropertyBasedObjectComparator;
-use WebTheory\Collection\Comparison\RuntimeIdBasedCollectionComparator;
-use WebTheory\Collection\Comparison\RuntimeIdBasedObjectComparator;
 use WebTheory\Collection\Contracts\ArrayDriverInterface;
 use WebTheory\Collection\Contracts\CollectionComparatorInterface;
 use WebTheory\Collection\Contracts\CollectionKernelInterface;
@@ -19,15 +15,12 @@ use WebTheory\Collection\Contracts\JsonSerializerInterface;
 use WebTheory\Collection\Contracts\LoopInterface;
 use WebTheory\Collection\Contracts\OperationProviderInterface;
 use WebTheory\Collection\Contracts\PropertyResolverInterface;
-use WebTheory\Collection\Driver\AutoKeyedMap;
-use WebTheory\Collection\Driver\IdentifiableItemList;
-use WebTheory\Collection\Driver\StandardList;
 use WebTheory\Collection\Enum\Order;
 use WebTheory\Collection\Iteration\ForeachLoop;
 use WebTheory\Collection\Json\BasicJsonSerializer;
+use WebTheory\Collection\Kernel\Factory\CollectionKernelSubsystemFactory;
 use WebTheory\Collection\Query\BasicQuery;
 use WebTheory\Collection\Query\Operation\Operations;
-use WebTheory\Collection\Resolution\PropertyResolver;
 use WebTheory\Collection\Sorting\MapBasedSorter;
 use WebTheory\Collection\Sorting\PropertyBasedSorter;
 
@@ -69,23 +62,15 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
         $this->jsonSerializer = $jsonSerializer ?? new BasicJsonSerializer();
         $this->operationProvider = $operations ?? new Operations();
 
-        $this->propertyResolver = new PropertyResolver($accessors);
+        $subsystems = new CollectionKernelSubsystemFactory(
+            $identifier,
+            $accessors,
+            $mapToIdentifier
+        );
 
-        $this->aggregateComparator = $identifier
-            ? new PropertyBasedCollectionComparator($this->propertyResolver, $identifier)
-            : new RuntimeIdBasedCollectionComparator();
-
-        $objectComparator = $identifier
-            ? new PropertyBasedObjectComparator($this->propertyResolver, $identifier)
-            : new RuntimeIdBasedObjectComparator();
-
-        if ($identifier && $mapToIdentifier) {
-            $this->driver = new AutoKeyedMap($identifier, $this->propertyResolver, $objectComparator);
-        } elseif ($identifier) {
-            $this->driver = new IdentifiableItemList($identifier, $this->propertyResolver, $objectComparator);
-        } else {
-            $this->driver = new StandardList($objectComparator);
-        }
+        $this->driver = $subsystems->getArrayDriver();
+        $this->propertyResolver = $subsystems->getPropertyResolver();
+        $this->aggregateComparator = $subsystems->getCollectionComparator();
 
         $this->collect(...$items);
     }
@@ -306,7 +291,9 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
 
     protected function getItemsWhere(string $property, string $operator, $value): array
     {
-        return $this->performQuery($this->getBasicQuery($property, $operator, $value));
+        return $this->performQuery(
+            $this->getBasicQuery($property, $operator, $value)
+        );
     }
 
     protected function spawnWith(self $clone): object

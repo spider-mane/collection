@@ -6,7 +6,6 @@ namespace Tests\Suites\Unit\Kernel;
 
 use Closure;
 use LogicException;
-use OutOfBoundsException;
 use PHPUnit\Framework\MockObject\MockObject;
 use stdClass;
 use Tests\Support\UnitTestCase;
