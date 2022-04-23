@@ -51,6 +51,8 @@ abstract class AbstractArrayDriver implements ArrayDriverInterface
 
             return true;
         }
+
+        return false;
     }
 
     protected function arrayContains(array $array, $item): bool

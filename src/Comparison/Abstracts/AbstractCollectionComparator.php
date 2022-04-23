@@ -2,7 +2,6 @@
 
 namespace WebTheory\Collection\Comparison\Abstracts;
 
-use LogicException;
 use WebTheory\Collection\Contracts\CollectionComparatorInterface;
 
 abstract class AbstractCollectionComparator implements CollectionComparatorInterface
@@ -32,8 +31,6 @@ abstract class AbstractCollectionComparator implements CollectionComparatorInter
 
     protected function whatEvenIsThis(array $array1, array $array2): array
     {
-        throw new LogicException('No!');
-
         /*
          if both primary and secondary are empty this will return false
          because the "array_diff" family of functions returns an empty array
