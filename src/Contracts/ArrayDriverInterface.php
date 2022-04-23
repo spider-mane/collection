@@ -4,9 +4,9 @@ namespace WebTheory\Collection\Contracts;
 
 interface ArrayDriverInterface
 {
-    public function retrieve(array $array, $item);
+    public function fetch(array $array, $item);
 
-    public function insert(array &$array, object $item, $locator = null): bool;
+    public function insert(array &$array, object $item, $offset = null): bool;
 
     public function remove(array &$array, $item): bool;
 

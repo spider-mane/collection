@@ -5,23 +5,20 @@ namespace WebTheory\Collection\Kernel\Builder;
 use Closure;
 use WebTheory\Collection\Contracts\JsonSerializerInterface;
 use WebTheory\Collection\Kernel\CollectionKernel;
-use WebTheory\Collection\Resolution\PropertyResolver;
 
 class CollectionKernelBuilder
 {
     protected array $items = [];
 
-    protected Closure $factory;
+    protected Closure $generator;
 
     protected array $accessors = [];
 
     protected ?string $identifier = null;
 
-    protected bool $mapToIdentifier = false;
+    protected bool $isMap = false;
 
-    protected JsonSerializerInterface $jsonSerializer;
-
-    protected PropertyResolver $propertyResolver;
+    protected ?JsonSerializerInterface $jsonSerializer = null;
 
     public function withItems(array $items): self
     {
@@ -30,9 +27,9 @@ class CollectionKernelBuilder
         return $this;
     }
 
-    public function withFactory(callable $factory): self
+    public function withGenerator(Closure $generator): self
     {
-        $this->factory = $factory;
+        $this->generator = $generator;
 
         return $this;
     }
@@ -44,16 +41,30 @@ class CollectionKernelBuilder
         return $this;
     }
 
-    public function withIdentifier(string $identifier): self
+    public function withIdentifier(?string $identifier): self
     {
         $this->identifier = $identifier;
 
         return $this;
     }
 
-    public function withMapped(bool $map): self
+    public function thatIsMapped(): self
     {
-        $this->mapToIdentifier = $map;
+        $this->isMap = true;
+
+        return $this;
+    }
+
+    public function thatIsNotMapped(): self
+    {
+        $this->isMap = false;
+
+        return $this;
+    }
+
+    public function withMapped(bool $isMap): self
+    {
+        $this->isMap = $isMap;
 
         return $this;
     }
@@ -65,21 +76,14 @@ class CollectionKernelBuilder
         return $this;
     }
 
-    public function withPropertyResolver(PropertyResolver $propertyResolver): self
-    {
-        $this->propertyResolver = $propertyResolver;
-
-        return $this;
-    }
-
     public function build(): CollectionKernel
     {
         return new CollectionKernel(
             $this->items,
-            $this->factory,
+            $this->generator,
             $this->identifier,
             $this->accessors,
-            $this->mapToIdentifier,
+            $this->isMap,
             $this->jsonSerializer,
         );
     }

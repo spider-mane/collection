@@ -18,6 +18,6 @@ class MapBasedSorter extends PropertyBasedSorter implements CollectionSorterInte
 
     protected function resolveValue($item): int
     {
-        return (int) $this->map[parent::resolveValue($item)] ?? 0;
+        return $this->map[parent::resolveValue($item)] ?? 0;
     }
 }

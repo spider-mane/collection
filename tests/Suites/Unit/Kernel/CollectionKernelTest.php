@@ -12,8 +12,9 @@ use Tests\Support\UnitTestCase;
 use WebTheory\Collection\Contracts\CollectionKernelInterface;
 use WebTheory\Collection\Contracts\CollectionQueryInterface;
 use WebTheory\Collection\Contracts\InvalidOrderExceptionInterface;
+use WebTheory\Collection\Enum\Order;
+use WebTheory\Collection\Kernel\Builder\CollectionKernelBuilder;
 use WebTheory\Collection\Kernel\CollectionKernel;
-use WebTheory\Collection\Sorting\Order;
 
 class CollectionKernelTest extends UnitTestCase
 {
@@ -45,6 +46,17 @@ class CollectionKernelTest extends UnitTestCase
         );
     }
 
+    public function buildCollectionKernel(bool $isMap = false): CollectionKernelBuilder
+    {
+        $builder = (new CollectionKernelBuilder())
+            ->withItems($this->dummyItems)
+            ->withGenerator($this->dummyGenerator);
+
+        $isMap ? $builder->thatIsMapped() : $builder->thatIsNotMapped();
+
+        return $builder;
+    }
+
     protected function createDummyGenerator(): Closure
     {
         return function (CollectionKernel $kernel) {
@@ -61,6 +73,35 @@ class CollectionKernelTest extends UnitTestCase
 
             return $collection;
         };
+    }
+
+    protected function createDummyIds(int $count): array
+    {
+        return $this->dummyList(fn () => $this->unique->slug, $count);
+    }
+
+    protected function createDummyItemMap(int $count = 10): array
+    {
+        $map = [];
+
+        for ($i = 0; $i < $count; $i++) {
+            $id = $this->unique->slug;
+
+            $map[$id] = $this->createDummyItem($id);
+        }
+
+        return $map;
+    }
+
+    protected function createDummyItemMapWithKeys(array $keys): array
+    {
+        $map = [];
+
+        foreach ($keys as $key) {
+            $map[$key] = $this->createDummyItem($key);
+        }
+
+        return $map;
     }
 
     protected function createDummyItems(array $identifiers = [], bool $idProp = true): array
@@ -102,6 +143,38 @@ class CollectionKernelTest extends UnitTestCase
             fn () => $this->unique->numberBetween(1, count($keys)),
             $keys
         );
+    }
+
+    protected function sortArray(array $array, string $order): array
+    {
+        switch ($order) {
+            case Order::Asc:
+                sort($array);
+
+                break;
+            case Order::Desc:
+                rsort($array);
+
+                break;
+        }
+
+        return $array;
+    }
+
+    protected function sortArrayAndMaintainKeys(array $array, string $order): array
+    {
+        switch ($order) {
+            case Order::Asc:
+                asort($array);
+
+                break;
+            case Order::Desc:
+                arsort($array);
+
+                break;
+        }
+
+        return $array;
     }
 
     /**
@@ -174,31 +247,30 @@ class CollectionKernelTest extends UnitTestCase
      * @test
      * @dataProvider orderDataProvider
      */
-    public function it_can_sort_items_according_to_property_value(string $order)
+    public function it_sorts_items_according_to_property_value(string $order, bool $identifier, bool $isMap)
     {
         # Arrange
         $properties = $this->dummyList(fn () => $this->unique->slug, 20);
-        $items = $this->createDummyItems($properties);
+        $items = ($isMap && !$identifier)
+            ? $this->createDummyItemMapWithKeys($properties)
+            : $this->createDummyItems($properties);
 
-        $sut = new CollectionKernel(
-            $items,
-            $this->dummyGenerator,
-            'id',
-        );
+        $sut = $this->buildCollectionKernel()
+            ->withItems($items)
+            ->withIdentifier($identifier ? 'id' : null)
+            ->withMapped($isMap)
+            ->build();
 
         # Act
         $sorted = $sut->sortBy('id', $order)->items;
-        $results = array_map(
-            fn ($item) => $item->id,
-            $sorted
-        );
+        $results = $isMap
+            ? array_keys($sorted)
+            : array_map(fn ($item) => $item->id, $sorted);
 
-        Order::DESC === $order
-            ? rsort($properties)
-            : sort($properties);
+        $properties = $this->sortArray($properties, $order);
 
         # Smoke
-        $this->assertNotEquals($items, $sorted);
+        $this->assertNotSame($items, $sorted);
 
         # Assert
         $this->assertEquals($properties, $results);
@@ -208,31 +280,34 @@ class CollectionKernelTest extends UnitTestCase
      * @test
      * @dataProvider orderDataProvider
      */
-    public function it_sorts_items_by_property_according_to_provided_map(string $order)
+    public function it_sorts_items_by_property_according_to_provided_map(string $order, bool $identifier, bool $isMap)
     {
         # Arrange
-        $count = 50;
-        $properties = $this->dummyList(fn () => $this->unique->slug, $count);
-        $items = $this->createDummyItems($properties);
-        $map = $this->dummyMap(
-            fn () => $this->unique->numberBetween(1, $count),
-            $properties
-        );
+        // $count = 20;
+        $properties = $this->dummyList(fn () => $this->unique->slug, 20);
 
-        $sut = new CollectionKernel($items, $this->dummyGenerator, 'id');
+        $items = ($isMap && !$identifier)
+            ? $this->createDummyItemMapWithKeys($properties)
+            : $this->createDummyItems($properties);
+
+        $map = $this->createDummySortMap($properties);
+
+        $sut = $this->buildCollectionKernel()
+            ->withItems($items)
+            ->withIdentifier($identifier ? 'id' : null)
+            ->withMapped($isMap)
+            ->build();
 
         # Act
-        $mapped = $sut->sortMapped($map, 'id', $order)->items;
-        $results = array_map(fn ($item) => $item->id, $mapped);
+        $sorted = $sut->sortMapped($map, 'id', $order)->items;
+        $results = $isMap
+            ? array_keys($sorted)
+            : array_map(fn ($item) => $item->id, $sorted);
 
-        Order::DESC === $order
-            ? arsort($map)
-            : asort($map);
-
-        $expectedOrder = array_keys($map);
+        $expectedOrder = array_keys($this->sortArrayAndMaintainKeys($map, $order));
 
         # Smoke
-        $this->assertNotEquals($items, $mapped);
+        $this->assertNotSame($items, $sorted);
 
         # Assert
         $this->assertEquals($expectedOrder, $results);
@@ -241,8 +316,49 @@ class CollectionKernelTest extends UnitTestCase
     public function orderDataProvider(): array
     {
         return [
-            'ascending' => [Order::ASC],
-            'descending' => [Order::DESC],
+            'asc as identifiable-item list' => [
+                'order' => Order::Asc,
+                'identifier' => true,
+                'mapped' => false,
+            ],
+            'desc as identifiable-item list' => [
+                'order' => Order::Desc,
+                'identifier' => true,
+                'mapped' => false,
+            ],
+
+            'asc as mapped-item list' => [
+                'order' => Order::Asc,
+                'identifier' => true,
+                'mapped' => true,
+            ],
+            'desc as mapped-item list' => [
+                'order' => Order::Desc,
+                'identifier' => true,
+                'mapped' => true,
+            ],
+
+            'asc as standard list' => [
+                'order' => Order::Asc,
+                'identifier' => false,
+                'mapped' => false,
+            ],
+            'desc as standard list' => [
+                'order' => Order::Desc,
+                'identifier' => false,
+                'mapped' => false,
+            ],
+
+            'asc as standard map' => [
+                'order' => Order::Asc,
+                'identifier' => false,
+                'mapped' => true,
+            ],
+            'desc as standard map' => [
+                'order' => Order::Desc,
+                'identifier' => false,
+                'mapped' => true,
+            ],
         ];
     }
 
@@ -313,71 +429,6 @@ class CollectionKernelTest extends UnitTestCase
         # Assert
         $this->assertEquals($mapped, $sut->toArray());
     }
-
-    /**
-     * @test
-     * @dataProvider identifierOperationDataProvider
-     */
-    // public function it_throws_proper_exception_if_an_operation_requiring_an_identifier_is_attempted_without_one(
-    //     array $items,
-    //     string $method,
-    //     array $args,
-    //     string $message = null
-    // ) {
-    //     $sut = new CollectionKernel($items, $this->dummyGenerator);
-
-    //     # Expect
-    //     $this->expectException(LogicException::class);
-
-    //     if (isset($message)) {
-    //         $this->expectExceptionMessage($message);
-    //     }
-
-    //     # Act
-    //     $this->performSystemAction($sut, $method, $args);
-    // }
-
-    // public function identifierOperationDataProvider(): array
-    // {
-    //     $this->initFaker();
-
-    //     $genericMessageTemplate = "Use of " . static::SUT_CLASS . "::%s requires an identifier.";
-
-    //     $itemCount = 10;
-    //     $itemIds = $this->dummyList(fn () => $this->unique->slug, $itemCount);
-    //     $items = $this->createDummyItems($itemIds);
-    //     $randomItem = $items[array_rand($items)];
-
-    //     $sortMap = $this->createDummySortMap($itemIds);
-
-    //     return [
-    //         // $this->mut('findById') => [
-    //         //     'items' => $items,
-    //         //     'method' => 'findById',
-    //         //     'args' => [$randomItem->id],
-    //         //     'message' => sprintf($genericMessageTemplate, 'findById'),
-    //         // ],
-
-    //         // $this->mut('sortMapped') => [
-    //         //     'items' => $items,
-    //         //     'method' => 'sortMapped',
-    //         //     'args' => [$sortMap, Order::ASC, null],
-    //         //     'message' => 'Cannot sort by map without property or item identifier set.',
-    //         // ],
-    //     ];
-    // }
-
-    /**
-     * @test
-     */
-    // public function it_throws_proper_exception_if_an_item_search_returns_nothing()
-    // {
-    //     # Expect
-    //     $this->expectException(OutOfBoundsException::class);
-
-    //     # Act
-    //     $this->sut->firstWhere('id', '=', $this->unique->slug);
-    // }
 
     /**
      * @test
@@ -588,7 +639,7 @@ class CollectionKernelTest extends UnitTestCase
     /**
      * @test
      */
-    public function it_removes_items_with_specified_properties()
+    public function it_returns_a_collection_without_items_with_specified_properties()
     {
         # Arrange
         $stripped = $this->dummyList(fn () => $this->unique->slug, 10);
@@ -771,30 +822,6 @@ class CollectionKernelTest extends UnitTestCase
                 'args' => ['id', '=', $randomItem->id],
             ],
 
-            // $this->mut('whereEquals') => [
-            //     'items' => $items,
-            //     'method' => 'whereEquals',
-            //     'args' => ['id', $randomItem->id],
-            // ],
-
-            // $this->mut('whereNotEquals') => [
-            //     'items' => $items,
-            //     'method' => 'whereNotEquals',
-            //     'args' => ['id', $randomItem->id],
-            // ],
-
-            // $this->mut('whereIn') => [
-            //     'items' => $items,
-            //     'method' => 'whereIn',
-            //     'args' => ['id', $itemSubsetIds],
-            // ],
-
-            // $this->mut('whereNotIn') => [
-            //     'items' => $items,
-            //     'method' => 'whereNotIn',
-            //     'args' => ['id', $itemSubsetIds],
-            // ],
-
             $this->mut('filter') => [
                 'items' => $items,
                 'method' => 'filter',
@@ -844,7 +871,12 @@ class CollectionKernelTest extends UnitTestCase
         bool $mapped
     ) {
         # Arrange
-        $sut = new CollectionKernel($items, $this->dummyGenerator, 'id', [], $mapped);
+        $sut = $this->buildCollectionKernel($mapped)
+            ->withItems($items)
+            ->withIdentifier('id')
+            ->build();
+
+        // $sut = new CollectionKernel($items, $this->dummyGenerator, 'id', [], $mapped);
         $sutArray = $sut->toArray();
 
         # Act
@@ -870,15 +902,16 @@ class CollectionKernelTest extends UnitTestCase
 
     public function spawnActionStorageDataProvider()
     {
-        $actions = $this->spawnActionDataProvider();
+        $methods = $this->spawnActionDataProvider();
         $strategies = ['map', 'list'];
+
         $data = [];
 
-        foreach ($actions as $name => $action) {
+        foreach ($methods as $method => $args) {
             foreach ($strategies as $strategy) {
-                $action['mapped'] = $strategy === 'map';
+                $args['mapped'] = $strategy === 'map' ? true : false;
 
-                $data["$name as $strategy"] = $action;
+                $data["$method, schema=$strategy"] = $args;
             }
         }
 
@@ -963,13 +996,11 @@ class CollectionKernelTest extends UnitTestCase
         bool $contained
     ) {
         # Arrange
-        $sut = new CollectionKernel(
-            $items,
-            $this->dummyGenerator,
-            $identifier ? 'id' : null,
-            [],
-            $mapped
-        );
+        $sut = $this->buildCollectionKernel()
+            ->withItems($items)
+            ->withIdentifier($identifier ? 'id' : null)
+            ->withMapped($mapped)
+            ->build();
 
         # Act
         $result = $sut->contains($seek);
@@ -987,6 +1018,11 @@ class CollectionKernelTest extends UnitTestCase
         $items = $this->createDummyItems($ids);
         $randomItem = $items[array_rand($items)];
         $randomId = $randomItem->id;
+
+        $map = $this->dummyMap(
+            fn () => $this->createDummyItem($this->unique->slug),
+            $ids
+        );
 
         return [
             'true as auto-keyed map' => [
@@ -1030,6 +1066,212 @@ class CollectionKernelTest extends UnitTestCase
                 'identifier' => false,
                 'mapped' => false,
                 'contained' => false,
+            ],
+            'true as standard map' => [
+                'items' => $map,
+                'seek' => $randomId,
+                'identifier' => false,
+                'mapped' => true,
+                'contained' => true,
+            ],
+            'false as standard map' => [
+                'items' => $map,
+                'seek' => $this->unique->slug,
+                'identifier' => false,
+                'mapped' => true,
+                'contained' => false,
+            ],
+        ];
+    }
+
+    /**
+     * @test
+     * @dataProvider sortedMapDataProvider
+     */
+    public function it_maintains_key_associations_when_performing_a_sorting_operation_on_a_map(
+        array $items,
+        ?string $identifier,
+        string $method,
+        array $args
+    ) {
+        # Arrange
+        $sut = $this->buildCollectionKernel()
+            ->withItems($items)
+            ->withMapped(true)
+            ->withIdentifier($identifier)
+            ->build();
+
+        # Act
+        $result = $this->performSystemAction($sut, $method, $args)->items;
+        ksort($items);
+        ksort($result);
+
+        # Assert
+        $this->assertSame($items, $result);
+    }
+
+    public function sortedMapDataProvider(): array
+    {
+        $this->initFaker();
+
+        $ids = $this->createDummyIds(10);
+        $sort = $this->createDummySortMap($ids);
+        $items = $this->createDummyItemMapWithKeys($ids);
+
+        return [
+            // SortBy
+            $this->mut('SortBy', 'mapping=auto, order=ascending') => [
+                'items' => $items,
+                'identifier' => 'id',
+                'method' => 'SortBy',
+                'args' => ['id', Order::Asc],
+            ],
+            $this->mut('SortBy', 'mapping=auto, order=descending') => [
+                'items' => $items,
+                'identifier' => 'id',
+                'method' => 'SortBy',
+                'args' => ['id', Order::Desc],
+            ],
+            $this->mut('SortBy', 'mapping=standard, order=ascending') => [
+                'items' => $items,
+                'identifier' => null,
+                'method' => 'SortBy',
+                'args' => ['id', Order::Asc],
+            ],
+            $this->mut('SortBy', 'mapping=standard, order=descending') => [
+                'items' => $items,
+                'identifier' => null,
+                'method' => 'SortBy',
+                'args' => ['id', Order::Desc],
+            ],
+
+            // SortMapped
+            $this->mut('sortMapped', 'mapping=auto, order=ascending') => [
+                'items' => $items,
+                'identifier' => 'id',
+                'method' => 'sortMapped',
+                'args' => [$sort, 'id', Order::Asc],
+            ],
+            $this->mut('sortMapped', 'mapping=auto, order=descending') => [
+                'items' => $items,
+                'identifier' => 'id',
+                'method' => 'sortMapped',
+                'args' => [$sort, 'id', Order::Desc],
+            ],
+            $this->mut('sortMapped', 'mapping=standard, order=ascending') => [
+                'items' => $items,
+                'identifier' => null,
+                'method' => 'sortMapped',
+                'args' => [$sort, 'id', Order::Asc],
+            ],
+            $this->mut('sortMapped', 'mapping=standard, order=descending') => [
+                'items' => $items,
+                'identifier' => null,
+                'method' => 'sortMapped',
+                'args' => [$sort, 'id', Order::Desc],
+            ],
+        ];
+    }
+
+    /**
+     * @test
+     * @dataProvider mutatedMapDataProvider
+     */
+    public function it_maintains_key_associations_when_performing_a_combining_operation_on_a_map(
+        array $items,
+        bool $identifier,
+        string $method,
+        array $args
+    ) {
+        # Arrange
+        $sut = $this->buildCollectionKernel()
+            ->withItems($items)
+            ->withMapped(true)
+            ->withIdentifier($identifier ? 'id' : null)
+            ->build();
+
+        $sutArray = $sut->toArray();
+
+        # Act
+        $result = $this->performSystemAction($sut, $method, $args);
+
+        # Smoke
+        $this->assertNotEmpty($result->items);
+
+        # Assert
+        foreach ($result->items as $key => $item) {
+            if (in_array($item, $sutArray)) {
+                $this->assertSame($item, $sutArray[$key]);
+                $this->assertSame($key, array_search($item, $sutArray));
+            }
+        }
+    }
+
+    public function mutatedMapDataProvider(): array
+    {
+        $this->initFaker();
+
+        $itemCount = 10;
+        $itemIds = $this->dummyList(fn () => $this->unique->slug, $itemCount);
+        $map = $this->createDummyItemMapWithKeys($itemIds);
+        $itemSubset = $this->dummyList(fn () => $map[array_rand($map)], $itemCount / 2);
+        $combine = $this->createDummyItemMap(10);
+
+        return [
+            // diff
+            $this->mut('diff', 'mapping=standard') => [
+                'items' => $map,
+                'identifier' => false,
+                'method' => 'diff',
+                'args' => [$combine],
+            ],
+            $this->mut('diff', 'mapping=auto') => [
+                'items' => $map,
+                'identifier' => true,
+                'method' => 'diff',
+                'args' => [$combine],
+            ],
+
+            // contrast
+            $this->mut('contrast', 'mapping=standard') => [
+                'items' => $map,
+                'identifier' => false,
+                'method' => 'contrast',
+                'args' => [$combine],
+            ],
+            $this->mut('contrast', 'mapping=auto') => [
+                'items' => $map,
+                'identifier' => true,
+                'method' => 'contrast',
+                'args' => [$combine],
+            ],
+
+            // intersect
+            $this->mut('intersect', 'mapping=standard') => [
+                'items' => $map,
+                'identifier' => false,
+                'method' => 'intersect',
+                'args' => [array_merge($combine, $itemSubset)],
+            ],
+            $this->mut('intersect', 'mapping=auto') => [
+                'items' => $map,
+                'identifier' => true,
+                'method' => 'intersect',
+                'args' => [array_merge($combine, $itemSubset)],
+            ],
+
+            // merge
+            $this->mut('merge', 'mapping=standard') => [
+                'items' => $map,
+                'identifier' => false,
+                'method' => 'merge',
+                'args' => [$combine],
+            ],
+            $this->mut('merge', 'mapping=auto') => [
+                'items' => $map,
+                'identifier' => true,
+                'method' => 'merge',
+                'args' => [$combine],
             ],
         ];
     }

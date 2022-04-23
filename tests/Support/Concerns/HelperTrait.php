@@ -7,9 +7,11 @@ trait HelperTrait
     /**
      * "Method Under Test" template for use as keys in data providers.
      */
-    protected function mut(string $method): string
+    protected function mut(string $method, string $extra = ''): string
     {
-        return "method {$method}()";
+        $method = "method={$method}()";
+
+        return $extra ? "$method, $extra" : $method;
     }
 
     /**

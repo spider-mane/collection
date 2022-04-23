@@ -16,13 +16,4 @@ class PropertyBasedSorter extends AbstractSorter implements CollectionSorterInte
         $this->propertyResolver = $resolver;
         $this->property = $property;
     }
-
-    protected function getSortingFunction(string $order): callable
-    {
-        return fn ($a, $b): int => $this->resolveEntriesOrder(
-            $this->resolveValue($a),
-            $this->resolveValue($b),
-            $order
-        );
-    }
 }

@@ -34,7 +34,9 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
     protected array $items = [];
 
     /**
-     * Function to create a new instance of the interfacing collection.
+     * Function to create a new instance of the client collection class when
+     * performing an operation that spawns a new collection. The callback will
+     * be passed a clone of the kernel with the mutated array.
      */
     protected Closure $generator;
 
@@ -53,14 +55,14 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
         Closure $generator,
         ?string $identifier = null,
         array $accessors = [],
-        ?bool $mapToIdentifier = false,
+        bool $mapToIdentifier = false,
         ?JsonSerializerInterface $jsonSerializer = null,
-        ?OperationProviderInterface $operations = null
+        ?OperationProviderInterface $operationProvider = null
     ) {
         $this->generator = $generator;
 
         $this->jsonSerializer = $jsonSerializer ?? new BasicJsonSerializer();
-        $this->operationProvider = $operations ?? new Operations();
+        $this->operationProvider = $operationProvider ?? new Operations();
 
         $subsystems = new CollectionKernelSubsystemFactory(
             $identifier,
@@ -72,7 +74,7 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
         $this->propertyResolver = $subsystems->getPropertyResolver();
         $this->aggregateComparator = $subsystems->getCollectionComparator();
 
-        $this->collect(...$items);
+        $this->collect($items);
     }
 
     public function __serialize(): array
@@ -80,14 +82,19 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
         return $this->toArray();
     }
 
-    public function collect(object ...$items): void
+    public function collect(array $items): void
     {
-        array_map([$this, 'add'], $items);
+        array_walk($items, [$this, 'insert']);
     }
 
-    public function add(object $item): bool
+    public function insert(object $item, $offset = null): bool
     {
-        return $this->driver->insert($this->items, $item);
+        return $this->driver->insert($this->items, $item, $offset);
+    }
+
+    public function fetch($item): object
+    {
+        return $this->driver->fetch($this->items, $item);
     }
 
     public function remove($item): bool
@@ -133,7 +140,7 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
 
     public function query(CollectionQueryInterface $query): object
     {
-        return $this->spawnFrom(...$this->performQuery($query));
+        return $this->spawnFrom($this->performQuery($query));
     }
 
     public function where(string $property, string $operator, $value): object
@@ -144,7 +151,7 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
     public function filter(callable $callback): object
     {
         return $this->spawnFrom(
-            ...array_values(array_filter($this->items, $callback))
+            array_values(array_filter($this->items, $callback))
         );
     }
 
@@ -163,34 +170,34 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
     public function diff(array $collection): object
     {
         return $this->spawnFrom(
-            ...$this->aggregateComparator->diff($this->items, $collection)
+            $this->aggregateComparator->diff($this->items, $collection)
         );
     }
 
     public function contrast(array $collection): object
     {
         return $this->spawnFrom(
-            ...$this->aggregateComparator->contrast($this->items, $collection)
+            $this->aggregateComparator->contrast($this->items, $collection)
         );
     }
 
     public function intersect(array $collection): object
     {
         return $this->spawnFrom(
-            ...$this->aggregateComparator->intersect($this->items, $collection)
+            $this->aggregateComparator->intersect($this->items, $collection)
         );
     }
 
     public function merge(array ...$collections): object
     {
         return $this->spawnFrom(
-            ...array_merge(array_values($this->items), ...$collections)
+            array_merge($this->items, ...$collections)
         );
     }
 
     public function sortWith(CollectionSorterInterface $sorter, string $order = Order::Asc): object
     {
-        return $this->spawnFrom(...$sorter->sort($this->items, $order));
+        return $this->spawnFrom($sorter->sort($this->items, $order));
     }
 
     public function sortBy(string $property, string $order = Order::Asc): object
@@ -301,12 +308,12 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
         return ($this->generator)($clone);
     }
 
-    protected function spawnFrom(object ...$items): object
+    protected function spawnFrom(array $items): object
     {
         $clone = clone $this;
 
         $clone->items = [];
-        $clone->collect(...$items);
+        $clone->collect($items);
 
         return $this->spawnWith($clone);
     }

@@ -22,14 +22,8 @@ class AutoKeyedMap extends AbstractArrayDriver implements ArrayDriverInterface
         $this->objectComparator = $objectComparator;
     }
 
-    public function insert(array &$array, object $item, $locator = null): bool
+    public function insertItem(array &$array, object $item, $offset = null): void
     {
-        if ($this->arrayContainsObject($array, $item)) {
-            return false;
-        }
-
         $array[$this->resolveValue($item)] = $item;
-
-        return true;
     }
 }

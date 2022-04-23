@@ -3,7 +3,6 @@
 namespace WebTheory\Collection\Sorting\Abstracts;
 
 use WebTheory\Collection\Contracts\CollectionSorterInterface;
-use WebTheory\Collection\Contracts\OrderInterface;
 use WebTheory\Collection\Sorting\Order;
 
 abstract class AbstractSorter implements CollectionSorterInterface
@@ -12,27 +11,34 @@ abstract class AbstractSorter implements CollectionSorterInterface
     {
         $this->validateOrder($order);
 
-        $array = $array;
+        return $this->getSortedArray($array, $order);
+    }
 
-        usort($array, $this->getSortingFunction($order));
+    protected function getSortedArray(array $array, string $order): array
+    {
+        $function = $this->getSortingFunction($order);
+
+        if (array_is_list($array)) {
+            usort($array, $function);
+        } else {
+            uasort($array, $function);
+        }
 
         return $array;
     }
 
-    public function ksort(array $array, string $order): array
+    protected function getSortingFunction(string $order): callable
     {
-        $this->validateOrder($order);
-
-        $array = $array;
-
-        uksort($array, $this->getSortingFunction($order));
-
-        return $array;
+        return fn ($a, $b): int => $this->resolveEntriesOrder(
+            $this->resolveValue($a),
+            $this->resolveValue($b),
+            $order
+        );
     }
 
     protected function resolveEntriesOrder($a, $b, string $order): int
     {
-        return ($a <=> $b) * ($order === OrderInterface::DESC ? -1 : 1);
+        return ($a <=> $b) * ($order === Order::DESC ? -1 : 1);
     }
 
     protected function validateOrder($order): void
@@ -40,5 +46,5 @@ abstract class AbstractSorter implements CollectionSorterInterface
         Order::throwExceptionIfInvalid($order);
     }
 
-    abstract protected function getSortingFunction(string $order): callable;
+    abstract protected function resolveValue(object $object);
 }

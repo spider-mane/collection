@@ -14,31 +14,48 @@ abstract class AbstractArrayDriver implements ArrayDriverInterface
         $this->objectComparator = $objectComparator;
     }
 
-    public function retrieve(array $array, $item)
+    public function insert(array &$array, object $item, $offset = null): bool
+    {
+        if ($this->arrayContainsObject($array, $item)) {
+            return false;
+        }
+
+        $this->insertItem($array, $item, $offset);
+
+        return true;
+    }
+
+    public function fetch(array $array, $item)
     {
         return $array[$item];
     }
 
     public function remove(array &$array, $item): bool
     {
-        if (is_object($item)) {
-            return $this->deleteObjectIfLocated($array, $item);
-        }
-
-        if (isset($array[$item])) {
-            unset($array[$item]);
-
-            return true;
-        }
-
-        return false;
+        return is_object($item)
+            ? $this->deleteObjectIfLocated($array, $item)
+            : $this->maybeRemoveItem($array, $item);
     }
 
     public function contains(array $array, $item): bool
     {
         return is_object($item)
-            ? in_array($item, $array, true)
-            : isset($array[$item]);
+            ? $this->arrayContainsObject($array, $item)
+            : $this->arrayContains($array, $item);
+    }
+
+    protected function maybeRemoveItem(array &$array, $item): bool
+    {
+        if (isset($array[$item])) {
+            unset($array[$item]);
+
+            return true;
+        }
+    }
+
+    protected function arrayContains(array $array, $item): bool
+    {
+        return isset($array[$item]);
     }
 
     protected function arrayContainsObject(array $array, object $object): bool
@@ -64,4 +81,6 @@ abstract class AbstractArrayDriver implements ArrayDriverInterface
 
         return true;
     }
+
+    abstract protected function insertItem(array &$array, object $item, $offset = null): void;
 }

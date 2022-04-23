@@ -13,6 +13,7 @@ use WebTheory\Collection\Contracts\PropertyResolverInterface;
 use WebTheory\Collection\Driver\AutoKeyedMap;
 use WebTheory\Collection\Driver\IdentifiableItemList;
 use WebTheory\Collection\Driver\StandardList;
+use WebTheory\Collection\Driver\StandardMap;
 use WebTheory\Collection\Resolution\PropertyResolver;
 
 class CollectionKernelSubsystemFactory
@@ -21,20 +22,19 @@ class CollectionKernelSubsystemFactory
 
     protected array $accessors;
 
-    protected bool $mapToIdentifier;
+    protected bool $isMap;
 
     protected PropertyResolverInterface $propertyResolver;
 
     protected ObjectComparatorInterface $objectComparator;
 
-    public function __construct(?string $identifier, array $accessors, bool $mapToIdentifier)
+    public function __construct(?string $identifier, array $accessors, bool $isMap)
     {
         $this->identifier = $identifier;
         $this->accessors = $accessors;
-        $this->mapToIdentifier = $mapToIdentifier;
+        $this->isMap = $isMap;
 
         $this->propertyResolver = new PropertyResolver($accessors);
-
         $this->objectComparator = $identifier
             ? new PropertyBasedObjectComparator($this->propertyResolver, $identifier)
             : new RuntimeIdBasedObjectComparator();
@@ -54,7 +54,7 @@ class CollectionKernelSubsystemFactory
 
     public function getArrayDriver(): ArrayDriverInterface
     {
-        if ($this->identifier && $this->mapToIdentifier) {
+        if ($this->identifier && $this->isMap) {
             $driver = new AutoKeyedMap(
                 $this->identifier,
                 $this->propertyResolver,
@@ -66,6 +66,8 @@ class CollectionKernelSubsystemFactory
                 $this->propertyResolver,
                 $this->objectComparator
             );
+        } elseif ($this->isMap) {
+            $driver = new StandardMap($this->objectComparator);
         } else {
             $driver = new StandardList($this->objectComparator);
         }

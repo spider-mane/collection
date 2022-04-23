@@ -7,14 +7,8 @@ use WebTheory\Collection\Driver\Abstracts\AbstractArrayDriver;
 
 class StandardMap extends AbstractArrayDriver implements ArrayDriverInterface
 {
-    public function insert(array &$array, object $item, $locator = null): bool
+    public function insertItem(array &$array, object $item, $offset = null): void
     {
-        if ($this->arrayContainsObject($array, $item)) {
-            return false;
-        }
-
-        $array[$locator] = $item;
-
-        return true;
+        $array[$offset] = $item;
     }
 }

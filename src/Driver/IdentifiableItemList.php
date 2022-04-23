@@ -6,11 +6,10 @@ use WebTheory\Collection\Contracts\ArrayDriverInterface;
 use WebTheory\Collection\Contracts\CollectionQueryInterface;
 use WebTheory\Collection\Contracts\ObjectComparatorInterface;
 use WebTheory\Collection\Contracts\PropertyResolverInterface;
-use WebTheory\Collection\Driver\Abstracts\AbstractArrayDriver;
 use WebTheory\Collection\Query\BasicQuery;
 use WebTheory\Collection\Resolution\Abstracts\ResolvesPropertyValueTrait;
 
-class IdentifiableItemList extends AbstractArrayDriver implements ArrayDriverInterface
+class IdentifiableItemList extends StandardList implements ArrayDriverInterface
 {
     use ResolvesPropertyValueTrait;
 
@@ -21,40 +20,23 @@ class IdentifiableItemList extends AbstractArrayDriver implements ArrayDriverInt
     ) {
         $this->property = $property;
         $this->propertyResolver = $propertyResolver;
-
-        parent::__construct($objectComparator);
+        $this->objectComparator = $objectComparator;
     }
 
-    public function insert(array &$array, object $item, $locator = null): bool
+    public function fetch(array $array, $item)
     {
-        if ($this->arrayContainsObject($array, $item)) {
-            return false;
-        }
-
-        $array[] = $item;
-
-        return true;
+        return $this->getFirstMatchingItem($array, $item);
     }
 
-    public function remove(array &$array, $item): bool
+    public function maybeRemoveItem(array &$array, $item): bool
     {
-        if (is_object($item)) {
-            return $this->deleteObjectIfLocated($array, $item);
-        }
-
-        if ($item = $this->getFirstMatchingItem($array, $item)) {
-            return $this->remove($array, $item);
-        }
-
-        return false;
+        return ($item = $this->getFirstMatchingItem($array, $item))
+            ? $this->remove($array, $item)
+            : false;
     }
 
-    public function contains(array $array, $item): bool
+    protected function arrayContains(array $array, $item): bool
     {
-        if (is_object($item)) {
-            return $this->arrayContainsObject($array, $item);
-        }
-
         return !empty($this->getMatchingItems($array, $item));
     }
 

@@ -7,14 +7,8 @@ use WebTheory\Collection\Driver\Abstracts\AbstractArrayDriver;
 
 class StandardList extends AbstractArrayDriver implements ArrayDriverInterface
 {
-    public function insert(array &$array, object $item, $locator = null): bool
+    public function insertItem(array &$array, object $item, $offset = null): void
     {
-        if ($this->arrayContainsObject($array, $item)) {
-            return false;
-        }
-
         $array[] = $item;
-
-        return true;
     }
 }

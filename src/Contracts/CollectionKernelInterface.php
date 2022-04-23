@@ -9,9 +9,11 @@ use WebTheory\Collection\Enum\Order;
 
 interface CollectionKernelInterface extends Traversable, Countable, JsonSerializable
 {
-    public function collect(object ...$items): void;
+    public function collect(array $items): void;
 
-    public function add(object $item): bool;
+    public function fetch($item): object;
+
+    public function insert(object $item, $offset = null): bool;
 
     public function remove($item): bool;
 
