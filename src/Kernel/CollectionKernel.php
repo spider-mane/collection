@@ -168,9 +168,7 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
 
     public function filter(callable $callback): object
     {
-        return $this->spawnFrom(
-            array_values(array_filter($this->items, $callback))
-        );
+        return $this->spawnFrom(array_filter($this->items, $callback));
     }
 
     public function column(string $property): array
