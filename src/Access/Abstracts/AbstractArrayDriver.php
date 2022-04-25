@@ -1,6 +1,6 @@
 <?php
 
-namespace WebTheory\Collection\Driver\Abstracts;
+namespace WebTheory\Collection\Access\Abstracts;
 
 use WebTheory\Collection\Contracts\ArrayDriverInterface;
 use WebTheory\Collection\Contracts\ObjectComparatorInterface;
@@ -12,17 +12,6 @@ abstract class AbstractArrayDriver implements ArrayDriverInterface
     public function __construct(ObjectComparatorInterface $objectComparator)
     {
         $this->objectComparator = $objectComparator;
-    }
-
-    public function insert(array &$array, object $item, $offset = null): bool
-    {
-        if ($this->arrayContainsObject($array, $item)) {
-            return false;
-        }
-
-        $this->insertItem($array, $item, $offset);
-
-        return true;
     }
 
     public function fetch(array $array, $item)
@@ -83,6 +72,4 @@ abstract class AbstractArrayDriver implements ArrayDriverInterface
 
         return true;
     }
-
-    abstract protected function insertItem(array &$array, object $item, $offset = null): void;
 }

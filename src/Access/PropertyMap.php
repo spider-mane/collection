@@ -1,15 +1,17 @@
 <?php
 
-namespace WebTheory\Collection\Driver;
+namespace WebTheory\Collection\Access;
 
+use WebTheory\Collection\Access\Abstracts\AbstractArrayDriver;
+use WebTheory\Collection\Access\Abstracts\AutoKeyedMapTrait;
 use WebTheory\Collection\Contracts\ArrayDriverInterface;
 use WebTheory\Collection\Contracts\ObjectComparatorInterface;
 use WebTheory\Collection\Contracts\PropertyResolverInterface;
-use WebTheory\Collection\Driver\Abstracts\AbstractArrayDriver;
 use WebTheory\Collection\Resolution\Abstracts\ResolvesPropertyValueTrait;
 
-class AutoKeyedMap extends AbstractArrayDriver implements ArrayDriverInterface
+class PropertyMap extends AbstractArrayDriver implements ArrayDriverInterface
 {
+    use AutoKeyedMapTrait;
     use ResolvesPropertyValueTrait;
 
     public function __construct(
@@ -22,8 +24,8 @@ class AutoKeyedMap extends AbstractArrayDriver implements ArrayDriverInterface
         $this->objectComparator = $objectComparator;
     }
 
-    public function insertItem(array &$array, object $item, $offset = null): void
+    protected function getObjectAsKey(object $item): string
     {
-        $array[$this->resolveValue($item)] = $item;
+        return $this->resolveValue($item);
     }
 }

@@ -1,6 +1,6 @@
 <?php
 
-namespace WebTheory\Collection\Driver;
+namespace WebTheory\Collection\Access;
 
 use WebTheory\Collection\Contracts\ArrayDriverInterface;
 use WebTheory\Collection\Contracts\CollectionQueryInterface;

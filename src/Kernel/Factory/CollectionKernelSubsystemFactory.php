@@ -2,6 +2,10 @@
 
 namespace WebTheory\Collection\Kernel\Factory;
 
+use WebTheory\Collection\Access\IdentifiableItemList;
+use WebTheory\Collection\Access\PropertyMap;
+use WebTheory\Collection\Access\StandardList;
+use WebTheory\Collection\Access\StandardMap;
 use WebTheory\Collection\Comparison\PropertyBasedCollectionComparator;
 use WebTheory\Collection\Comparison\PropertyBasedObjectComparator;
 use WebTheory\Collection\Comparison\RuntimeIdBasedCollectionComparator;
@@ -10,10 +14,6 @@ use WebTheory\Collection\Contracts\ArrayDriverInterface;
 use WebTheory\Collection\Contracts\CollectionComparatorInterface;
 use WebTheory\Collection\Contracts\ObjectComparatorInterface;
 use WebTheory\Collection\Contracts\PropertyResolverInterface;
-use WebTheory\Collection\Driver\AutoKeyedMap;
-use WebTheory\Collection\Driver\IdentifiableItemList;
-use WebTheory\Collection\Driver\StandardList;
-use WebTheory\Collection\Driver\StandardMap;
 use WebTheory\Collection\Resolution\PropertyResolver;
 
 class CollectionKernelSubsystemFactory
@@ -60,7 +60,7 @@ class CollectionKernelSubsystemFactory
     public function getArrayDriver(): ArrayDriverInterface
     {
         if ($this->identifier && $this->isMap) {
-            $driver = new AutoKeyedMap(
+            $driver = new PropertyMap(
                 $this->identifier,
                 $this->propertyResolver,
                 $this->objectComparator
