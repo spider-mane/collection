@@ -45,6 +45,11 @@ class CollectionKernelSubsystemFactory
         return $this->propertyResolver;
     }
 
+    public function getObjectComparator(): ObjectComparatorInterface
+    {
+        return $this->objectComparator;
+    }
+
     public function getCollectionComparator(): CollectionComparatorInterface
     {
         return $this->identifier

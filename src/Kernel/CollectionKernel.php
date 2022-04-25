@@ -9,6 +9,7 @@ use Traversable;
 use WebTheory\Collection\Contracts\ArrayDriverInterface;
 use WebTheory\Collection\Contracts\CollectionComparatorInterface;
 use WebTheory\Collection\Contracts\CollectionKernelInterface;
+use WebTheory\Collection\Contracts\ArrayFusionInterface;
 use WebTheory\Collection\Contracts\CollectionQueryInterface;
 use WebTheory\Collection\Contracts\CollectionSorterInterface;
 use WebTheory\Collection\Contracts\JsonSerializerInterface;
@@ -16,6 +17,11 @@ use WebTheory\Collection\Contracts\LoopInterface;
 use WebTheory\Collection\Contracts\OperationProviderInterface;
 use WebTheory\Collection\Contracts\PropertyResolverInterface;
 use WebTheory\Collection\Enum\Order;
+use WebTheory\Collection\Fusion\Collection\FusionCollection;
+use WebTheory\Collection\Fusion\Contrast;
+use WebTheory\Collection\Fusion\Diff;
+use WebTheory\Collection\Fusion\Intersection;
+use WebTheory\Collection\Fusion\Merger;
 use WebTheory\Collection\Iteration\ForeachLoop;
 use WebTheory\Collection\Json\BasicJsonSerializer;
 use WebTheory\Collection\Kernel\Factory\CollectionKernelSubsystemFactory;
@@ -50,6 +56,8 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
 
     protected JsonSerializerInterface $jsonSerializer;
 
+    protected FusionCollection $fusions;
+
     public function __construct(
         array $items,
         Closure $generator,
@@ -73,6 +81,15 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
         $this->driver = $subsystems->getArrayDriver();
         $this->propertyResolver = $subsystems->getPropertyResolver();
         $this->aggregateComparator = $subsystems->getCollectionComparator();
+
+        $objectComparator = $subsystems->getObjectComparator();
+
+        $this->fusions = new FusionCollection([
+            'contrast' => new Contrast($objectComparator),
+            'diff' => new Diff($objectComparator),
+            'intersect' => new Intersection($objectComparator),
+            'merge' => new Merger($objectComparator),
+        ]);
 
         $this->collect($items);
     }
@@ -167,32 +184,29 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
         return $this->aggregateComparator->matches($this->items, $collection);
     }
 
-    public function diff(array $collection): object
+    public function remix(ArrayFusionInterface $fusion, array ...$collections): object
     {
-        return $this->spawnFrom(
-            $this->aggregateComparator->diff($this->items, $collection)
-        );
+        return $this->spawnFrom($fusion->remix($this->items, ...$collections));
     }
 
-    public function contrast(array $collection): object
+    public function diff(array ...$collections): object
     {
-        return $this->spawnFrom(
-            $this->aggregateComparator->contrast($this->items, $collection)
-        );
+        return $this->remix($this->getFusion('diff'), ...$collections);
     }
 
-    public function intersect(array $collection): object
+    public function contrast(array ...$collections): object
     {
-        return $this->spawnFrom(
-            $this->aggregateComparator->intersect($this->items, $collection)
-        );
+        return $this->remix($this->getFusion('contrast'), ...$collections);
+    }
+
+    public function intersect(array ...$collections): object
+    {
+        return $this->remix($this->getFusion('intersect'), ...$collections);
     }
 
     public function merge(array ...$collections): object
     {
-        return $this->spawnFrom(
-            array_merge($this->items, ...$collections)
-        );
+        return $this->remix($this->getFusion('merge'), ...$collections);
     }
 
     public function sortWith(CollectionSorterInterface $sorter, string $order = Order::Asc): object
@@ -284,6 +298,11 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
             $value,
             $this->operationProvider
         );
+    }
+
+    protected function getFusion(string $fusion): ArrayFusionInterface
+    {
+        return $this->fusions->fetch($fusion);
     }
 
     protected function performQuery(CollectionQueryInterface $query): array

@@ -39,11 +39,13 @@ interface CollectionKernelInterface extends Traversable, Countable, JsonSerializ
 
     public function matches(array $collection): bool;
 
-    public function diff(array $collection): object;
+    public function remix(ArrayFusionInterface $fusion, array ...$collections): object;
 
-    public function contrast(array $collection): object;
+    public function diff(array ...$collections): object;
 
-    public function intersect(array $collection): object;
+    public function contrast(array ...$collections): object;
+
+    public function intersect(array ...$collections): object;
 
     public function merge(array ...$collections): object;
 

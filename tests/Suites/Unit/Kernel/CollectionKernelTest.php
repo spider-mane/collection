@@ -289,7 +289,6 @@ class CollectionKernelTest extends UnitTestCase
     public function it_sorts_items_by_property_according_to_provided_map(string $order, bool $identifier, bool $isMap)
     {
         # Arrange
-        // $count = 20;
         $properties = $this->dummyList(fn () => $this->unique->slug, 20);
 
         $items = ($isMap && !$identifier)
@@ -513,7 +512,7 @@ class CollectionKernelTest extends UnitTestCase
     /**
      * @test
      */
-    public function it_returns_a_concrete_collection_containing_the_difference_between_its_items_and_another()
+    public function it_returns_a_concrete_collection_containing_the_contrast_between_its_items_and_another()
     {
         # Arrange
         $shared = $this->createDummyItems();
@@ -880,7 +879,6 @@ class CollectionKernelTest extends UnitTestCase
             ->withIdentifier('id')
             ->build();
 
-        // $sut = new CollectionKernel($items, $this->dummyGenerator, 'id', [], $mapped);
         $sutArray = $sut->toArray();
 
         # Act
@@ -1181,7 +1179,7 @@ class CollectionKernelTest extends UnitTestCase
      * @test
      * @dataProvider mutatedMapDataProvider
      */
-    public function it_maintains_key_associations_when_performing_a_combining_operation_on_a_map(
+    public function it_maintains_key_associations_when_performing_a_fusion_operation_on_a_map(
         array $items,
         bool $identifier,
         string $method,
