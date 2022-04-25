@@ -7,7 +7,7 @@ use WebTheory\Collection\Contracts\ObjectComparatorInterface;
 
 class ObjectComparator extends AbstractObjectComparator implements ObjectComparatorInterface
 {
-    public function getComparisonFunction(): callable
+    protected function getComparisonFunction(): callable
     {
         return fn (object $a, object $b): int => $a <=> $b;
     }

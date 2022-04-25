@@ -7,19 +7,19 @@ use WebTheory\Collection\Comparison\Abstracts\UsesObjectComparatorTrait;
 use WebTheory\Collection\Contracts\CollectionComparatorInterface;
 use WebTheory\Collection\Contracts\ObjectComparatorInterface;
 
-class ObjectComparatorBasedCollectionComparator extends AbstractCollectionComparator implements CollectionComparatorInterface
+class CollectionComparator extends AbstractCollectionComparator implements CollectionComparatorInterface
 {
     use UsesObjectComparatorTrait;
 
-    protected ObjectComparatorInterface $comparator;
+    protected ObjectComparatorInterface $objectComparator;
 
-    public function __construct(ObjectComparatorInterface $comparator)
+    public function __construct(ObjectComparatorInterface $objectComparator)
     {
-        $this->comparator = $comparator;
+        $this->objectComparator = $objectComparator;
     }
 
     protected function getObjectComparator(): ObjectComparatorInterface
     {
-        return $this->comparator;
+        return $this->objectComparator;
     }
 }

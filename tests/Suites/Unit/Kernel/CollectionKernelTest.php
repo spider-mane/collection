@@ -321,45 +321,45 @@ class CollectionKernelTest extends UnitTestCase
     public function orderDataProvider(): array
     {
         return [
-            'asc as identifiable-item list' => [
+            'order=asc, driver=identifiable-item list' => [
                 'order' => Order::Asc,
                 'identifier' => true,
                 'mapped' => false,
             ],
-            'desc as identifiable-item list' => [
+            'order=desc, driver=identifiable-item list' => [
                 'order' => Order::Desc,
                 'identifier' => true,
                 'mapped' => false,
             ],
 
-            'asc as mapped-item list' => [
+            'order=asc, driver=property map' => [
                 'order' => Order::Asc,
                 'identifier' => true,
                 'mapped' => true,
             ],
-            'desc as mapped-item list' => [
+            'order=desc, driver=property map' => [
                 'order' => Order::Desc,
                 'identifier' => true,
                 'mapped' => true,
             ],
 
-            'asc as standard list' => [
+            'order=asc, driver=standard list' => [
                 'order' => Order::Asc,
                 'identifier' => false,
                 'mapped' => false,
             ],
-            'desc as standard list' => [
+            'order=desc, driver=standard list' => [
                 'order' => Order::Desc,
                 'identifier' => false,
                 'mapped' => false,
             ],
 
-            'asc as standard map' => [
+            'order=asc, driver=standard map' => [
                 'order' => Order::Asc,
                 'identifier' => false,
                 'mapped' => true,
             ],
-            'desc as standard map' => [
+            'order=desc, driver=standard map' => [
                 'order' => Order::Desc,
                 'identifier' => false,
                 'mapped' => true,
@@ -504,8 +504,8 @@ class CollectionKernelTest extends UnitTestCase
     public function objectMemberAccessabilityDataProvider(): array
     {
         return [
-            'direct access' => [true],
-            'method access' => [false],
+            'access=member' => [true],
+            'access=method' => [false],
         ];
     }
 
@@ -588,8 +588,8 @@ class CollectionKernelTest extends UnitTestCase
         $items = $this->createDummyItems();
 
         return [
-            'matches' => [true, $items, $items],
-            'does not match' => [false, $items, $this->createDummyItems()],
+            'match=true' => [true, $items, $items],
+            'match=false' => [false, $items, $this->createDummyItems()],
         ];
     }
 
@@ -634,8 +634,8 @@ class CollectionKernelTest extends UnitTestCase
     public function hasItemsDataProvider(): array
     {
         return [
-            'has items' => [true],
-            'no items' => [false],
+            'status=true' => [true],
+            'status=false' => [false],
         ];
     }
 
@@ -1027,56 +1027,56 @@ class CollectionKernelTest extends UnitTestCase
         );
 
         return [
-            'true as auto-keyed map' => [
+            'status=true, driver=property map' => [
                 'items' => $items,
                 'seek' => $randomId,
                 'identifier' => true,
                 'mapped' => true,
                 'contained' => true,
             ],
-            'false as auto-keyed map' => [
+            'status=false, driver=property map' => [
                 'items' => $items,
                 'seek' => $this->unique->slug,
                 'identifier' => true,
                 'mapped' => true,
                 'contained' => false,
             ],
-            'true as identifiable list' => [
+            'status=true, driver=identifiable-item list' => [
                 'items' => $items,
                 'seek' => $randomId,
                 'identifier' => true,
                 'mapped' => false,
                 'contained' => true,
             ],
-            'false as identifiable list' => [
+            'status=false, driver=identifiable-item list' => [
                 'items' => $items,
                 'seek' => $this->unique->slug,
                 'identifier' => true,
                 'mapped' => false,
                 'contained' => false,
             ],
-            'true as standard list' => [
+            'status=true, driver=standard list' => [
                 'items' => $items,
                 'seek' => $randomItem,
                 'identifier' => false,
                 'mapped' => false,
                 'contained' => true,
             ],
-            'false as standard list' => [
+            'status=false, driver=standard list' => [
                 'items' => $items,
                 'seek' => $this->createDummyItem($this->fake->slug),
                 'identifier' => false,
                 'mapped' => false,
                 'contained' => false,
             ],
-            'true as standard map' => [
+            'status=true, driver=standard map' => [
                 'items' => $map,
                 'seek' => $randomId,
                 'identifier' => false,
                 'mapped' => true,
                 'contained' => true,
             ],
-            'false as standard map' => [
+            'status=false, driver=standard map' => [
                 'items' => $map,
                 'seek' => $this->unique->slug,
                 'identifier' => false,

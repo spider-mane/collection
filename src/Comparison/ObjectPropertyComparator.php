@@ -1,12 +1,13 @@
 <?php
 
-namespace WebTheory\Collection\Comparison\Abstracts;
+namespace WebTheory\Collection\Comparison;
 
+use WebTheory\Collection\Comparison\Abstracts\AbstractObjectComparator;
 use WebTheory\Collection\Contracts\ObjectComparatorInterface;
 use WebTheory\Collection\Contracts\PropertyResolverInterface;
 use WebTheory\Collection\Resolution\Abstracts\ResolvesPropertyValueTrait;
 
-abstract class AbstractPropertyBasedObjectComparator extends AbstractObjectComparator implements ObjectComparatorInterface
+class ObjectPropertyComparator extends AbstractObjectComparator implements ObjectComparatorInterface
 {
     use ResolvesPropertyValueTrait;
 
@@ -14,5 +15,13 @@ abstract class AbstractPropertyBasedObjectComparator extends AbstractObjectCompa
     {
         $this->propertyResolver = $propertyResolver;
         $this->property = $property;
+    }
+
+    protected function getComparisonFunction(): callable
+    {
+        return fn (
+            $a,
+            $b
+        ): int => $this->resolveValue($a) <=> $this->resolveValue($b);
     }
 }

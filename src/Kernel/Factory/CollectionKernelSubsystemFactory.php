@@ -6,10 +6,9 @@ use WebTheory\Collection\Access\IdentifiableItemList;
 use WebTheory\Collection\Access\PropertyMap;
 use WebTheory\Collection\Access\StandardList;
 use WebTheory\Collection\Access\StandardMap;
-use WebTheory\Collection\Comparison\PropertyBasedCollectionComparator;
-use WebTheory\Collection\Comparison\PropertyBasedObjectComparator;
-use WebTheory\Collection\Comparison\RuntimeIdBasedCollectionComparator;
-use WebTheory\Collection\Comparison\RuntimeIdBasedObjectComparator;
+use WebTheory\Collection\Comparison\CollectionComparator;
+use WebTheory\Collection\Comparison\ObjectIdComparator;
+use WebTheory\Collection\Comparison\ObjectPropertyComparator;
 use WebTheory\Collection\Contracts\ArrayDriverInterface;
 use WebTheory\Collection\Contracts\CollectionComparatorInterface;
 use WebTheory\Collection\Contracts\ObjectComparatorInterface;
@@ -36,8 +35,8 @@ class CollectionKernelSubsystemFactory
 
         $this->propertyResolver = new PropertyResolver($accessors);
         $this->objectComparator = $identifier
-            ? new PropertyBasedObjectComparator($this->propertyResolver, $identifier)
-            : new RuntimeIdBasedObjectComparator();
+            ? new ObjectPropertyComparator($this->propertyResolver, $identifier)
+            : new ObjectIdComparator();
     }
 
     public function getPropertyResolver(): PropertyResolverInterface
@@ -52,9 +51,7 @@ class CollectionKernelSubsystemFactory
 
     public function getCollectionComparator(): CollectionComparatorInterface
     {
-        return $this->identifier
-            ? new PropertyBasedCollectionComparator($this->propertyResolver, $this->identifier)
-            : new RuntimeIdBasedCollectionComparator();
+        return new CollectionComparator($this->objectComparator);
     }
 
     public function getArrayDriver(): ArrayDriverInterface

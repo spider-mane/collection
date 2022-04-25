@@ -15,4 +15,6 @@ abstract class AbstractObjectComparator implements ObjectComparatorInterface
     {
         return $this->comparison($object1, $object2) === 0;
     }
+
+    abstract protected function getComparisonFunction(): callable;
 }
