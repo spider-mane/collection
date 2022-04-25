@@ -6,8 +6,8 @@ namespace Tests\Suites\Unit\Kernel;
 
 use Closure;
 use LogicException;
-use PHPUnit\Framework\MockObject\MockObject;
 use stdClass;
+use Tests\Support\Dummies\DummyItem;
 use Tests\Support\UnitTestCase;
 use WebTheory\Collection\Contracts\CollectionKernelInterface;
 use WebTheory\Collection\Contracts\CollectionQueryInterface;
@@ -20,7 +20,7 @@ class CollectionKernelTest extends UnitTestCase
 {
     protected const SUT_CLASS = CollectionKernel::class;
 
-    protected const DUMMY_ITEM_CLASS = 'DummyItem';
+    protected const DUMMY_ITEM_CLASS = DummyItem::class;
 
     protected const DUMMY_COLLECTION_CLASS = 'DummyCollection';
 
@@ -29,8 +29,6 @@ class CollectionKernelTest extends UnitTestCase
     protected array $dummyItems;
 
     protected Closure $dummyGenerator;
-
-    protected string $identifier = 'id';
 
     protected function setUp(): void
     {
@@ -62,14 +60,14 @@ class CollectionKernelTest extends UnitTestCase
         return function (CollectionKernel $kernel) {
             $collection = $this->getMockBuilder(stdClass::class)
                 ->setMockClassName(static::DUMMY_COLLECTION_CLASS)
-                ->addMethods(['getDummyItems'])
+                ->addMethods(['getItems'])
                 ->getMock();
 
             $items = $kernel->toArray();
 
             $collection->items = $items;
 
-            $collection->method('getDummyItems')->willReturn($items);
+            $collection->method('getItems')->willReturn($items);
 
             return $collection;
         };
@@ -78,6 +76,14 @@ class CollectionKernelTest extends UnitTestCase
     protected function createDummyIds(int $count): array
     {
         return $this->dummyList(fn () => $this->unique->slug, $count);
+    }
+
+    protected function createDummyItems(array $identifiers = [], bool $idProp = true): array
+    {
+        return array_map(
+            fn ($identifier) => $this->createDummyItem($identifier, $idProp),
+            $identifiers ?: $this->dummyList(fn () => $this->unique->slug, 20)
+        );
     }
 
     protected function createDummyItemMap(int $count = 10): array
@@ -104,24 +110,9 @@ class CollectionKernelTest extends UnitTestCase
         return $map;
     }
 
-    protected function createDummyItems(array $identifiers = [], bool $idProp = true): array
+    protected function createDummyItem($identifier, bool $idProp = true): DummyItem
     {
-        return array_map(
-            fn ($identifier) => $this->createDummyItem($identifier, $idProp),
-            $identifiers ?: $this->dummyList(fn () => $this->unique->slug, 20)
-        );
-    }
-
-    protected function createDummyItem($identifier, bool $idProp = true): MockObject
-    {
-        $item = $this->getMockBuilder(stdClass::class)
-            ->setMockClassName(static::DUMMY_ITEM_CLASS)
-            ->addMethods(['getDummyId'])
-            ->getMock();
-
-        $item->propertyToEnsureComparability = $this->unique->sentence;
-
-        $item->method('getDummyId')->willReturn($identifier);
+        $item = new DummyItem($identifier);
 
         if ($idProp) {
             $item->id = $identifier;
@@ -130,7 +121,7 @@ class CollectionKernelTest extends UnitTestCase
         return $item;
     }
 
-    protected function getRandomDummyItem(): MockObject
+    protected function getRandomDummyItem(): DummyItem
     {
         return $this->dummyItems[array_rand($this->dummyItems)];
     }
@@ -192,19 +183,15 @@ class CollectionKernelTest extends UnitTestCase
     {
         # Arrange
         $identifier = $this->unique->slug;
-        $class = static::DUMMY_ITEM_CLASS;
-        $message = "No method of access for \"{$identifier}\" in {$class} has been defined.";
+        $class = addslashes(static::DUMMY_ITEM_CLASS);
 
         # Expect
         $this->expectException(LogicException::class);
-        $this->expectExceptionMessage($message);
+        $this->expectExceptionMessageMatches("/{$identifier}/");
+        $this->expectExceptionMessageMatches("/{$class}/");
 
         # Act
-        new CollectionKernel(
-            $this->dummyItems,
-            $this->dummyGenerator,
-            $identifier
-        );
+        $this->buildCollectionKernel()->withIdentifier($identifier)->build();
     }
 
     /**
@@ -222,19 +209,38 @@ class CollectionKernelTest extends UnitTestCase
     /**
      * @test
      */
-    public function it_can_access_properties_via_mapped_accessor_methods()
+    public function it_accesses_properties_via_mapped_accessor_methods()
     {
         # Arrange
         $items = $this->createDummyItems([], false);
         $item = $items[0];
-        $itemId = $item->getDummyId();
+        $itemId = $item->getId();
 
         $sut = new CollectionKernel(
             $items,
             $this->dummyGenerator,
             'id',
-            ['id' => 'getDummyId']
+            ['id' => 'getId']
         );
+
+        # Act
+        $result = $sut->firstWhere('id', '=', $itemId);
+
+        # Assert
+        $this->assertEquals($item, $result);
+    }
+
+    /**
+     * @test
+     */
+    public function it_accesses_properties_by_inference_if_an_accessor_has_not_been_specified()
+    {
+        # Arrange
+        $items = $this->createDummyItems([], false);
+        $item = $items[0];
+        $itemId = $item->getId();
+
+        $sut = $this->buildCollectionKernel()->withItems($items)->build();
 
         # Act
         $result = $sut->firstWhere('id', '=', $itemId);
@@ -486,7 +492,7 @@ class CollectionKernelTest extends UnitTestCase
             $items,
             $this->dummyGenerator,
             null,
-            ['id' => 'getDummyId']
+            ['id' => 'getId']
         );
 
         # Act
@@ -523,8 +529,6 @@ class CollectionKernelTest extends UnitTestCase
 
         # Act
         $result = $sut->contrast($completeItems2);
-
-        // dd($diff, $result->items);
 
         # Smoke
         foreach ([$shared, $items1, $items2] as $items) {
@@ -741,7 +745,7 @@ class CollectionKernelTest extends UnitTestCase
         # Arrange
         $spawn = $this->getMockBuilder(stdClass::class)
             ->setMockClassName(static::DUMMY_COLLECTION_CLASS)
-            ->addMethods(['getDummyItems'])
+            ->addMethods(['getItems'])
             ->getMock();
 
         $generator = function (CollectionKernel $clone) use ($spawn) {
@@ -1188,6 +1192,7 @@ class CollectionKernelTest extends UnitTestCase
             ->withItems($items)
             ->withMapped(true)
             ->withIdentifier($identifier ? 'id' : null)
+            ->withAccessors(['id' => 'getId'])
             ->build();
 
         $sutArray = $sut->toArray();
