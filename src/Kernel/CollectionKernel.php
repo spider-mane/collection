@@ -8,6 +8,7 @@ use IteratorAggregate;
 use Traversable;
 use WebTheory\Collection\Contracts\ArrayDriverInterface;
 use WebTheory\Collection\Contracts\ArrayFusionInterface;
+use WebTheory\Collection\Contracts\CollectionAggregateInterface;
 use WebTheory\Collection\Contracts\CollectionComparatorInterface;
 use WebTheory\Collection\Contracts\CollectionKernelInterface;
 use WebTheory\Collection\Contracts\CollectionQueryInterface;
@@ -50,7 +51,7 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
 
     protected PropertyResolverInterface $propertyResolver;
 
-    protected CollectionComparatorInterface $aggregateComparator;
+    protected CollectionComparatorInterface $collectionComparator;
 
     protected OperationProviderInterface $operationProvider;
 
@@ -80,7 +81,7 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
 
         $this->driver = $subsystems->getArrayDriver();
         $this->propertyResolver = $subsystems->getPropertyResolver();
-        $this->aggregateComparator = $subsystems->getCollectionComparator();
+        $this->collectionComparator = $subsystems->getCollectionComparator();
 
         $objectComparator = $subsystems->getObjectComparator();
 
@@ -181,7 +182,7 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
 
     public function matches(array $collection): bool
     {
-        return $this->aggregateComparator->matches($this->items, $collection);
+        return $this->collectionComparator->matches($this->items, $collection);
     }
 
     public function remix(ArrayFusionInterface $fusion, array ...$collections): object
@@ -257,6 +258,11 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
     public function foreach(callable $callback): void
     {
         $this->loop(new ForeachLoop(), $callback);
+    }
+
+    public function operate(CollectionAggregateInterface $aggregate, array ...$collections)
+    {
+        return $aggregate->operate($this->items, ...$collections);
     }
 
     public function values(): array

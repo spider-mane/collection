@@ -65,6 +65,8 @@ interface CollectionKernelInterface extends Traversable, Countable, JsonSerializ
 
     public function foreach(callable $callback): void;
 
+    public function operate(CollectionAggregateInterface $aggregate, array ...$collections);
+
     public function values(): array;
 
     public function toArray(): array;
