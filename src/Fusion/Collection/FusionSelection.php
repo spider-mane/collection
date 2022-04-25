@@ -2,15 +2,15 @@
 
 namespace WebTheory\Collection\Fusion\Collection;
 
+use WebTheory\Collection\Access\StandardMap;
 use WebTheory\Collection\Comparison\ObjectComparator;
 use WebTheory\Collection\Contracts\ArrayDriverInterface;
 use WebTheory\Collection\Contracts\ArrayFusionInterface;
-use WebTheory\Collection\Driver\StandardMap;
 
-class FusionCollection
+class FusionSelection
 {
     /**
-     * @var array<string|int,ArrayFusionInterface>
+     * @var array<string,ArrayFusionInterface>
      */
     protected array $fusions = [];
 
@@ -28,9 +28,9 @@ class FusionCollection
         array_walk($fusions, [$this, 'insert']);
     }
 
-    public function insert(ArrayFusionInterface $fusion, $offset = null): void
+    public function insert(ArrayFusionInterface $fusion, string $name): void
     {
-        $this->driver->insert($this->fusions, $fusion, $offset);
+        $this->driver->insert($this->fusions, $fusion, $name);
     }
 
     public function remove(string $fusion): void
@@ -48,7 +48,7 @@ class FusionCollection
         return $this->driver->contains($this->fusions, $fusion);
     }
 
-    public function fuse(string $fusion, array ...$collections): array
+    public function remix(string $fusion, array ...$collections): array
     {
         return $this->fetch($fusion)->remix(...$collections);
     }

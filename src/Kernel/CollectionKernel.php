@@ -7,9 +7,9 @@ use Closure;
 use IteratorAggregate;
 use Traversable;
 use WebTheory\Collection\Contracts\ArrayDriverInterface;
+use WebTheory\Collection\Contracts\ArrayFusionInterface;
 use WebTheory\Collection\Contracts\CollectionComparatorInterface;
 use WebTheory\Collection\Contracts\CollectionKernelInterface;
-use WebTheory\Collection\Contracts\ArrayFusionInterface;
 use WebTheory\Collection\Contracts\CollectionQueryInterface;
 use WebTheory\Collection\Contracts\CollectionSorterInterface;
 use WebTheory\Collection\Contracts\JsonSerializerInterface;
@@ -17,7 +17,7 @@ use WebTheory\Collection\Contracts\LoopInterface;
 use WebTheory\Collection\Contracts\OperationProviderInterface;
 use WebTheory\Collection\Contracts\PropertyResolverInterface;
 use WebTheory\Collection\Enum\Order;
-use WebTheory\Collection\Fusion\Collection\FusionCollection;
+use WebTheory\Collection\Fusion\Collection\FusionSelection;
 use WebTheory\Collection\Fusion\Contrast;
 use WebTheory\Collection\Fusion\Diff;
 use WebTheory\Collection\Fusion\Intersection;
@@ -35,7 +35,7 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
     /**
      * Array of objects to be operated on.
      *
-     * @var array<int,object>|array<string,object>
+     * @var array<int|string,object>
      */
     protected array $items = [];
 
@@ -56,7 +56,7 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
 
     protected JsonSerializerInterface $jsonSerializer;
 
-    protected FusionCollection $fusions;
+    protected FusionSelection $fusions;
 
     public function __construct(
         array $items,
@@ -84,7 +84,7 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
 
         $objectComparator = $subsystems->getObjectComparator();
 
-        $this->fusions = new FusionCollection([
+        $this->fusions = new FusionSelection([
             'contrast' => new Contrast($objectComparator),
             'diff' => new Diff($objectComparator),
             'intersect' => new Intersection($objectComparator),
@@ -305,14 +305,14 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
         return $this->fusions->fetch($fusion);
     }
 
-    protected function performQuery(CollectionQueryInterface $query): array
-    {
-        return $query->query($this->items);
-    }
-
     protected function getPropertyValue(object $item, string $property)
     {
         return $this->propertyResolver->resolveProperty($item, $property);
+    }
+
+    protected function performQuery(CollectionQueryInterface $query): array
+    {
+        return $query->query($this->items);
     }
 
     protected function getItemsWhere(string $property, string $operator, $value): array
