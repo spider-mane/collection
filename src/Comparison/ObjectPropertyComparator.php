@@ -17,11 +17,8 @@ class ObjectPropertyComparator extends AbstractObjectComparator implements Objec
         $this->property = $property;
     }
 
-    protected function getComparisonFunction(): callable
+    public function comparison(object $a, object $b): int
     {
-        return fn (
-            $a,
-            $b
-        ): int => $this->resolveValue($a) <=> $this->resolveValue($b);
+        return $this->resolveValue($a) <=> $this->resolveValue($b);
     }
 }

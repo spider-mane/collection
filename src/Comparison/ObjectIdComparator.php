@@ -7,8 +7,8 @@ use WebTheory\Collection\Contracts\ObjectComparatorInterface;
 
 class ObjectIdComparator extends AbstractObjectComparator implements ObjectComparatorInterface
 {
-    protected function getComparisonFunction(): callable
+    public function comparison(object $a, object $b): int
     {
-        return fn ($a, $b): int => spl_object_id($a) <=> spl_object_id($b);
+        return spl_object_id($a) <=> spl_object_id($b);
     }
 }

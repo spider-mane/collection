@@ -33,13 +33,25 @@ class PropertyResolver implements PropertyResolverInterface
             }
         }
 
-        if (method_exists($object, $inferredMethod = $this->getInferredMethod($property))) {
+        $inferredMethod = $this->getInferredMethod($property);
+
+        if (is_callable([$object, $inferredMethod])) {
             return $object->{$inferredMethod}();
         }
 
-        if (property_exists($object, $inferredMember = $this->getInferredMember($property))) {
+        $inferredMember = $this->getInferredMember($property);
+
+        if (property_exists($object, $inferredMember)) {
             try {
                 return $object->{$inferredMember};
+            } catch (ErrorException $e) {
+                // move on
+            }
+        }
+
+        if (is_callable([$object, $property])) {
+            try {
+                return $object->{$property}();
             } catch (ErrorException $e) {
                 // move on
             }
@@ -61,20 +73,14 @@ class PropertyResolver implements PropertyResolverInterface
 
     protected function getInferredMethod(string $property): string
     {
-        if (!isset($this->methods[$property])) {
-            $this->methods[$property] = $this->getPropertyAsMethod($property);
-        }
-
-        return $this->methods[$property];
+        return $this->methods[$property]
+            ??= $this->getPropertyAsMethod($property);
     }
 
     protected function getInferredMember(string $property): string
     {
-        if (!isset($this->members[$property])) {
-            $this->members[$property] = $this->getPropertyAsMember($property);
-        }
-
-        return $this->members[$property];
+        return $this->members[$property]
+            ??= $this->getPropertyAsMember($property);
     }
 
     protected function getPropertyAsMethod(string $property): string

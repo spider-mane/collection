@@ -5,9 +5,9 @@ namespace WebTheory\Collection\Sorting;
 use WebTheory\Collection\Contracts\CollectionSorterInterface;
 use WebTheory\Collection\Contracts\PropertyResolverInterface;
 use WebTheory\Collection\Resolution\Abstracts\ResolvesPropertyValueTrait;
-use WebTheory\Collection\Sorting\Abstracts\AbstractSorter;
+use WebTheory\Collection\Sorting\Abstracts\AbstractTransformationSorter;
 
-class PropertyBasedSorter extends AbstractSorter implements CollectionSorterInterface
+class PropertySorter extends AbstractTransformationSorter implements CollectionSorterInterface
 {
     use ResolvesPropertyValueTrait;
 

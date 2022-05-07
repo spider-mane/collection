@@ -21,8 +21,6 @@ interface CollectionKernelInterface extends Traversable, Countable, JsonSerializ
 
     public function hasItems(): bool;
 
-    public function column(string $property): array;
-
     public function first(): object;
 
     public function last(): object;
@@ -49,7 +47,7 @@ interface CollectionKernelInterface extends Traversable, Countable, JsonSerializ
 
     public function merge(array ...$collections): object;
 
-    public function sortWith(CollectionSorterInterface $sorter, string $order = Order::Asc): object;
+    public function sort(CollectionSorterInterface $sorter, string $order = Order::Asc): object;
 
     public function sortBy(string $property, string $order = Order::Asc): object;
 
@@ -66,6 +64,8 @@ interface CollectionKernelInterface extends Traversable, Countable, JsonSerializ
     public function foreach(callable $callback): void;
 
     public function operate(CollectionAggregateInterface $aggregate, array ...$collections);
+
+    public function column(string $property): array;
 
     public function values(): array;
 

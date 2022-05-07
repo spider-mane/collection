@@ -1,0 +1,14 @@
+parameters:
+  level: 0
+  tmpDir: build/phpstan
+  reportUnmatchedIgnoredErrors: false
+
+  paths:
+    - src
+    - tests
+
+  ignoreErrors:
+    - '#^Unsafe usage of new static\(\).$#'
+    - '#^Expression on left side of \?\? is not nullable\.$#'
+    - '#^Right side of && is always true.$#'
+    - '#^Variable \$[a-zA-Z0-9\\_]+ on left side of \?\? always exists and is not nullable.$#'

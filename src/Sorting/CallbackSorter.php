@@ -5,7 +5,7 @@ namespace WebTheory\Collection\Sorting;
 use WebTheory\Collection\Contracts\CollectionSorterInterface;
 use WebTheory\Collection\Sorting\Abstracts\AbstractSorter;
 
-class CallbackBasedSorter extends AbstractSorter implements CollectionSorterInterface
+class CallbackSorter extends AbstractSorter implements CollectionSorterInterface
 {
     /**
      * @var callable
@@ -17,8 +17,8 @@ class CallbackBasedSorter extends AbstractSorter implements CollectionSorterInte
         $this->callback = $callback;
     }
 
-    protected function getSortingFunction(string $order): callable
+    protected function compare(object $a, object $b): int
     {
-        return fn ($a, $b) => ($this->callback)($a, $b, $order);
+        return ($this->callback)($a, $b);
     }
 }

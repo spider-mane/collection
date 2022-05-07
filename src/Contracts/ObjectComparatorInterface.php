@@ -4,7 +4,7 @@ namespace WebTheory\Collection\Contracts;
 
 interface ObjectComparatorInterface
 {
-    public function comparison(object $object1, object $object2): int;
+    public function comparison(object $a, object $b): int;
 
-    public function matches(object $object1, object $object2): bool;
+    public function matches(object $a, object $b): bool;
 }

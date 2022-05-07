@@ -5,7 +5,7 @@ namespace WebTheory\Collection\Sorting;
 use WebTheory\Collection\Contracts\CollectionSorterInterface;
 use WebTheory\Collection\Contracts\PropertyResolverInterface;
 
-class MapBasedSorter extends PropertyBasedSorter implements CollectionSorterInterface
+class MappedSorter extends PropertySorter implements CollectionSorterInterface
 {
     protected array $map = [];
 
@@ -16,7 +16,7 @@ class MapBasedSorter extends PropertyBasedSorter implements CollectionSorterInte
         $this->map = $map;
     }
 
-    protected function resolveValue($item): int
+    protected function resolveValue(object $item): int
     {
         return $this->map[parent::resolveValue($item)] ?? 0;
     }

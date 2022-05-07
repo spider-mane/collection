@@ -3,7 +3,7 @@
 namespace WebTheory\Collection\Sorting\Abstracts;
 
 use WebTheory\Collection\Contracts\CollectionSorterInterface;
-use WebTheory\Collection\Sorting\Order;
+use WebTheory\Collection\Enum\Order;
 
 abstract class AbstractSorter implements CollectionSorterInterface
 {
@@ -27,24 +27,20 @@ abstract class AbstractSorter implements CollectionSorterInterface
         return $array;
     }
 
-    protected function getSortingFunction(string $order): callable
-    {
-        return fn ($a, $b): int => $this->resolveEntriesOrder(
-            $this->resolveValue($a),
-            $this->resolveValue($b),
-            $order
-        );
-    }
-
-    protected function resolveEntriesOrder($a, $b, string $order): int
-    {
-        return ($a <=> $b) * ($order === Order::DESC ? -1 : 1);
-    }
-
     protected function validateOrder($order): void
     {
         Order::throwExceptionIfInvalid($order);
     }
 
-    abstract protected function resolveValue(object $object);
+    protected function getSortingFunction(string $order): callable
+    {
+        return fn ($a, $b) => $this->doSortingOperation($a, $b, $order);
+    }
+
+    protected function doSortingOperation(object $a, object $b, string $order): int
+    {
+        return $this->compare($a, $b) * ($order === Order::Desc ? -1 : 1);
+    }
+
+    abstract protected function compare(object $a, object $b): int;
 }

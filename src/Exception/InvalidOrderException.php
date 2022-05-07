@@ -4,7 +4,7 @@ namespace WebTheory\Collection\Exception;
 
 use InvalidArgumentException;
 use WebTheory\Collection\Contracts\InvalidOrderExceptionInterface;
-use WebTheory\Collection\Contracts\OrderInterface;
+use WebTheory\Collection\Enum\Order;
 
 class InvalidOrderException extends InvalidArgumentException implements InvalidOrderExceptionInterface
 {
@@ -13,8 +13,8 @@ class InvalidOrderException extends InvalidArgumentException implements InvalidO
         parent::__construct(
             sprintf(
                 'Order must be either "%s" or "%s", "%s" given',
-                OrderInterface::ASC,
-                OrderInterface::DESC,
+                Order::Asc,
+                Order::Desc,
                 $given
             )
         );

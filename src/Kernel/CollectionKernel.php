@@ -28,8 +28,8 @@ use WebTheory\Collection\Json\BasicJsonSerializer;
 use WebTheory\Collection\Kernel\Factory\CollectionKernelSubsystemFactory;
 use WebTheory\Collection\Query\BasicQuery;
 use WebTheory\Collection\Query\Operation\Operations;
-use WebTheory\Collection\Sorting\MapBasedSorter;
-use WebTheory\Collection\Sorting\PropertyBasedSorter;
+use WebTheory\Collection\Sorting\MappedSorter;
+use WebTheory\Collection\Sorting\PropertySorter;
 
 class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
 {
@@ -89,7 +89,7 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
             'contrast' => new Contrast($objectComparator),
             'diff' => new Diff($objectComparator),
             'intersect' => new Intersection($objectComparator),
-            'merge' => new Merger($objectComparator),
+            'merge' => new Merger(),
         ]);
 
         $this->collect($items);
@@ -171,13 +171,6 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
         return $this->spawnFrom(array_filter($this->items, $callback));
     }
 
-    public function column(string $property): array
-    {
-        return $this->map(
-            fn ($item) => $this->getPropertyValue($item, $property)
-        );
-    }
-
     public function matches(array $collection): bool
     {
         return $this->collectionComparator->matches($this->items, $collection);
@@ -190,41 +183,41 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
 
     public function diff(array ...$collections): object
     {
-        return $this->remix($this->getFusion('diff'), ...$collections);
+        return $this->getRemix('diff', ...$collections);
     }
 
     public function contrast(array ...$collections): object
     {
-        return $this->remix($this->getFusion('contrast'), ...$collections);
+        return $this->getRemix('contrast', ...$collections);
     }
 
     public function intersect(array ...$collections): object
     {
-        return $this->remix($this->getFusion('intersect'), ...$collections);
+        return $this->getRemix('intersect', ...$collections);
     }
 
     public function merge(array ...$collections): object
     {
-        return $this->remix($this->getFusion('merge'), ...$collections);
+        return $this->getRemix('merge', ...$collections);
     }
 
-    public function sortWith(CollectionSorterInterface $sorter, string $order = Order::Asc): object
+    public function sort(CollectionSorterInterface $sorter, string $order = Order::Asc): object
     {
         return $this->spawnFrom($sorter->sort($this->items, $order));
     }
 
     public function sortBy(string $property, string $order = Order::Asc): object
     {
-        return $this->sortWith(
-            new PropertyBasedSorter($this->propertyResolver, $property),
+        return $this->sort(
+            new PropertySorter($this->propertyResolver, $property),
             $order
         );
     }
 
     public function sortMapped(array $map, string $property, string $order = Order::Asc): object
     {
-        return $this->sortWith(
-            new MapBasedSorter($this->propertyResolver, $property, $map),
+        return $this->sort(
+            new MappedSorter($this->propertyResolver, $property, $map),
             $order
         );
     }
@@ -261,6 +254,13 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
     public function operate(CollectionAggregateInterface $aggregate, array ...$collections)
     {
         return $aggregate->operate($this->items, ...$collections);
+    }
+
+    public function column(string $property): array
+    {
+        return $this->map(
+            fn ($item) => $this->getPropertyValue($item, $property)
+        );
     }
 
     public function values(): array
@@ -304,9 +304,9 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
         );
     }
 
-    protected function getFusion(string $fusion): ArrayFusionInterface
+    protected function getRemix(string $fusion, array ...$collections): object
     {
-        return $this->fusions->fetch($fusion);
+        return $this->remix($this->fusions->fetch($fusion), ...$collections);
     }
 
     protected function getPropertyValue(object $item, string $property)
@@ -326,7 +326,7 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
         );
     }
 
-    protected function spawnWith(self $clone): object
+    protected function spawnWith(CollectionKernel $clone): object
     {
         return ($this->generator)($clone);
     }
