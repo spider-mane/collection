@@ -23,9 +23,9 @@ class FusionSelection
         $this->collect($fusions);
     }
 
-    public function collect(array $fusions)
+    public function collect(array $fusions): void
     {
-        array_walk($fusions, [$this, 'insert']);
+        $this->driver->collect($this->fusions, $fusions);
     }
 
     public function insert(ArrayFusionInterface $fusion, string $name): void

@@ -37,26 +37,26 @@ class IdentifiableItemList extends StandardList implements ArrayDriverInterface
 
     protected function arrayContains(array $array, $item): bool
     {
-        return !empty($this->getMatchingItems($array, $item));
-    }
-
-    protected function getMatchingItems(array $array, $item): array
-    {
-        return $this->getQuery($this->property, '=', $item)->query($array);
+        return $this->getQuery(...$this->query($item))->match($array);
     }
 
     protected function getFirstMatchingItem(array $array, $item): ?object
     {
-        return $this->getMatchingItems($array, $item)[0] ?? null;
+        return $this->getQuery(...$this->query($item))->first($array);
+    }
+
+    protected function query($item): array
+    {
+        return [$this->property, '=', $item];
     }
 
     protected function getQuery(string $property, string $operator, $value): CollectionQueryInterface
     {
         return new BasicQuery(
-            $this->propertyResolver,
             $property,
             $operator,
             $value,
+            $this->propertyResolver,
         );
     }
 }

@@ -5,7 +5,7 @@ namespace WebTheory\Collection\Sorting;
 use WebTheory\Collection\Contracts\CollectionSorterInterface;
 use WebTheory\Collection\Contracts\PropertyResolverInterface;
 
-class MappedSorter extends PropertySorter implements CollectionSorterInterface
+class MapBasedSorter extends PropertyBasedSorter implements CollectionSorterInterface
 {
     protected array $map = [];
 

@@ -28,8 +28,8 @@ use WebTheory\Collection\Json\BasicJsonSerializer;
 use WebTheory\Collection\Kernel\Factory\CollectionKernelSubsystemFactory;
 use WebTheory\Collection\Query\BasicQuery;
 use WebTheory\Collection\Query\Operation\Operations;
-use WebTheory\Collection\Sorting\MappedSorter;
-use WebTheory\Collection\Sorting\PropertySorter;
+use WebTheory\Collection\Sorting\MapBasedSorter;
+use WebTheory\Collection\Sorting\PropertyBasedSorter;
 
 class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
 {
@@ -102,7 +102,7 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
 
     public function collect(array $items): void
     {
-        array_walk($items, [$this, 'insert']);
+        $this->driver->collect($this->items, $items);
     }
 
     public function insert(object $item, $offset = null): bool
@@ -146,24 +146,22 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
 
     public function hasWhere(string $property, string $operator, $value): bool
     {
-        return !empty($this->getItemsWhere($property, $operator, $value));
+        return $this->queryMatch($this->getBasicQuery(...func_get_args()));
     }
 
     public function firstWhere(string $property, string $operator, $value): ?object
     {
-        $items = $this->getItemsWhere($property, $operator, $value);
-
-        return reset($items) ?: null;
+        return $this->queryFirst($this->getBasicQuery(...func_get_args()));
     }
 
     public function query(CollectionQueryInterface $query): object
     {
-        return $this->spawnFrom($this->performQuery($query));
+        return $this->spawnFrom($this->queryAll($query));
     }
 
     public function where(string $property, string $operator, $value): object
     {
-        return $this->query($this->getBasicQuery($property, $operator, $value));
+        return $this->query($this->getBasicQuery(...func_get_args()));
     }
 
     public function filter(callable $callback): object
@@ -209,7 +207,7 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
     public function sortBy(string $property, string $order = Order::Asc): object
     {
         return $this->sort(
-            new PropertySorter($this->propertyResolver, $property),
+            new PropertyBasedSorter($this->propertyResolver, $property),
             $order
         );
     }
@@ -217,7 +215,7 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
     public function sortMapped(array $map, string $property, string $order = Order::Asc): object
     {
         return $this->sort(
-            new MappedSorter($this->propertyResolver, $property, $map),
+            new MapBasedSorter($this->propertyResolver, $property, $map),
             $order
         );
     }
@@ -296,10 +294,10 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
     protected function getBasicQuery(string $property, string $operator, $value): CollectionQueryInterface
     {
         return new BasicQuery(
-            $this->propertyResolver,
             $property,
             $operator,
             $value,
+            $this->propertyResolver,
             $this->operationProvider
         );
     }
@@ -314,16 +312,19 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
         return $this->propertyResolver->resolveProperty($item, $property);
     }
 
-    protected function performQuery(CollectionQueryInterface $query): array
+    protected function queryAll(CollectionQueryInterface $query): array
     {
         return $query->query($this->items);
     }
 
-    protected function getItemsWhere(string $property, string $operator, $value): array
+    protected function queryFirst(CollectionQueryInterface $query): ?object
     {
-        return $this->performQuery(
-            $this->getBasicQuery($property, $operator, $value)
-        );
+        return $query->first($this->items);
+    }
+
+    protected function queryMatch(CollectionQueryInterface $query): bool
+    {
+        return $query->match($this->items);
     }
 
     protected function spawnWith(CollectionKernel $clone): object

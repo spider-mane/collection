@@ -7,7 +7,7 @@ use WebTheory\Collection\Contracts\PropertyResolverInterface;
 use WebTheory\Collection\Resolution\Abstracts\ResolvesPropertyValueTrait;
 use WebTheory\Collection\Sorting\Abstracts\AbstractTransformationSorter;
 
-class PropertySorter extends AbstractTransformationSorter implements CollectionSorterInterface
+class PropertyBasedSorter extends AbstractTransformationSorter implements CollectionSorterInterface
 {
     use ResolvesPropertyValueTrait;
 

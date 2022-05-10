@@ -7,6 +7,7 @@ use WebTheory\Collection\Contracts\OperationProviderInterface;
 use WebTheory\Collection\Contracts\PropertyResolverInterface;
 use WebTheory\Collection\Query\Operation\Operations;
 use WebTheory\Collection\Resolution\Abstracts\ResolvesPropertyValueTrait;
+use WebTheory\Collection\Resolution\PropertyResolver;
 
 class BasicQuery implements CollectionQueryInterface
 {
@@ -19,37 +20,52 @@ class BasicQuery implements CollectionQueryInterface
     protected $value;
 
     public function __construct(
-        PropertyResolverInterface $propertyResolver,
         string $property,
         string $operator,
         $value,
-        OperationProviderInterface $operationProvider = null
+        ?PropertyResolverInterface $propertyResolver = null,
+        ?OperationProviderInterface $operationProvider = null
     ) {
-        $this->propertyResolver = $propertyResolver;
         $this->property = $property;
         $this->operator = $operator;
         $this->value = $value;
 
+        $this->propertyResolver = $propertyResolver ?? new PropertyResolver();
         $this->operationProvider = $operationProvider ?? new Operations();
     }
 
     public function query(array $items): array
     {
-        return $this->filter($this->getFiltrationCallback(), $items);
+        return array_filter($items, [$this, 'itemMeetsCriteria']);
     }
 
-    protected function filter(callable $callback, array $items): array
+    public function first(array $items): ?object
     {
-        return array_values(array_filter($items, $callback));
+        foreach ($items as $item) {
+            if ($this->itemMeetsCriteria($item)) {
+                return $item;
+            }
+        }
+
+        return null;
     }
 
-    protected function getFiltrationCallback(): callable
+    public function match(array $items): bool
     {
-        return fn ($item) => $this->itemMeetsCriteria($this->resolveValue($item));
+        return is_object($this->first($items));
     }
 
-    protected function itemMeetsCriteria($value): bool
+    protected function itemMeetsCriteria(object $item): bool
     {
-        return $this->operationProvider->operate($value, $this->operator, $this->value);
+        return $this->propertyIsMatch($this->resolveValue($item));
+    }
+
+    protected function propertyIsMatch($value): bool
+    {
+        return $this->operationProvider->operate(
+            $value,
+            $this->operator,
+            $this->value
+        );
     }
 }

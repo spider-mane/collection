@@ -19,6 +19,13 @@ abstract class AbstractArrayDriver implements ArrayDriverInterface
         return $array[$item];
     }
 
+    public function collect(array &$array, array $items): void
+    {
+        foreach ($items as $offset => $item) {
+            $this->insert($array, $item, $offset);
+        }
+    }
+
     public function remove(array &$array, $item): bool
     {
         return is_object($item)
