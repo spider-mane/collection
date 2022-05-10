@@ -48,18 +48,10 @@ if (!file_exists($path = "$root/.playground")) {
   mkdir($path);
 }
 
-foreach (['browser', 'console', ...$contexts] as $context) {
+foreach (['console', ...$contexts] as $context) {
   $file = "$path/$context.php";
 
   if (!file_exists($file)) {
     file_put_contents($file, $content);
-  }
-
-  if ('browser' === $context && file_exists($publicDir = "$root/$publicDir")) {
-    if (file_exists($link = "$publicDir/$location.php")) {
-      unlink($link);
-    }
-
-    link($file, $link);
   }
 }
