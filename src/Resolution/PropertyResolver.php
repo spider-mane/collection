@@ -2,8 +2,8 @@
 
 namespace WebTheory\Collection\Resolution;
 
-use ErrorException;
 use LogicException;
+use ReflectionProperty;
 use WebTheory\Collection\Contracts\PropertyResolverInterface;
 
 class PropertyResolver implements PropertyResolverInterface
@@ -25,12 +25,8 @@ class PropertyResolver implements PropertyResolverInterface
             return $object->{$definedMethod}();
         }
 
-        if (property_exists($object, $property)) {
-            try {
-                return $object->{$property};
-            } catch (ErrorException $e) {
-                // move on
-            }
+        if ($this->isAccessibleProperty($object, $property)) {
+            return $object->{$property};
         }
 
         $inferredMethod = $this->getInferredMethod($property);
@@ -41,20 +37,12 @@ class PropertyResolver implements PropertyResolverInterface
 
         $inferredMember = $this->getInferredMember($property);
 
-        if (property_exists($object, $inferredMember)) {
-            try {
-                return $object->{$inferredMember};
-            } catch (ErrorException $e) {
-                // move on
-            }
+        if ($this->isAccessibleProperty($object, $inferredMember)) {
+            return $object->{$inferredMember};
         }
 
         if (is_callable([$object, $property])) {
-            try {
-                return $object->{$property}();
-            } catch (ErrorException $e) {
-                // move on
-            }
+            return $object->{$property}();
         }
 
         throw new LogicException(
@@ -64,6 +52,12 @@ class PropertyResolver implements PropertyResolverInterface
                 get_class($object)
             )
         );
+    }
+
+    protected function isAccessibleProperty(object $object, string $property): bool
+    {
+        return property_exists($object, $property)
+            && (new ReflectionProperty($object, $property))->isPublic();
     }
 
     protected function getDefinedMethod(string $property): ?string

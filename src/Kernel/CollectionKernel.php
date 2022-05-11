@@ -146,17 +146,17 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
 
     public function hasWhere(string $property, string $operator, $value): bool
     {
-        return $this->queryMatch($this->getBasicQuery(...func_get_args()));
+        return $this->getBasicQuery(...func_get_args())->match($this->items);
     }
 
     public function firstWhere(string $property, string $operator, $value): ?object
     {
-        return $this->queryFirst($this->getBasicQuery(...func_get_args()));
+        return $this->getBasicQuery(...func_get_args())->first($this->items);
     }
 
     public function query(CollectionQueryInterface $query): object
     {
-        return $this->spawnFrom($this->queryAll($query));
+        return $this->spawnFrom($query->query($this->items));
     }
 
     public function where(string $property, string $operator, $value): object
@@ -310,21 +310,6 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
     protected function getPropertyValue(object $item, string $property)
     {
         return $this->propertyResolver->resolveProperty($item, $property);
-    }
-
-    protected function queryAll(CollectionQueryInterface $query): array
-    {
-        return $query->query($this->items);
-    }
-
-    protected function queryFirst(CollectionQueryInterface $query): ?object
-    {
-        return $query->first($this->items);
-    }
-
-    protected function queryMatch(CollectionQueryInterface $query): bool
-    {
-        return $query->match($this->items);
     }
 
     protected function spawnWith(CollectionKernel $clone): object
