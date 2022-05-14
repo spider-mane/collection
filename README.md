@@ -2,7 +2,7 @@
 
 ## A message to Russian 🇷🇺 people
 
-If you currently live in Russia, please read [this message][link-to-russia].
+If you currently live in Russia, please read [this message][link-to-russia-message].
 
 [![Stand With Ukraine][banner-support-ukraine]][link-support-ukraine]
 
@@ -17,7 +17,7 @@ If you currently live in Russia, please read [this message][link-to-russia].
 
 ## Purpose
 
-This package facilitates the creation of typed collections without having to duplicate underlying logic. Due to PHP's enforcement of [Liskov Substitution Principle](https://php.watch/articles/php-lsp), it is not possible to create a natively typed collection using inheritance so long as you need methods that operate on specific types. This package provides a configurable 'collection kernel' class that stores and performs operations on a given array. Rather than inheritance, this paradigm uses (self-determined) composition to fulfil basic collection functionality. Besides enabling strong typing, one of the many benefits of this approach is that you have complete control over the operations to be exposed by your collections.
+This package facilitates the creation of typed collections without having to duplicate underlying logic. Due to PHP's enforcement of [Liskov Substitution Principle](https://php.watch/articles/php-lsp) via [method covariance and contravariance](https://www.php.net/manual/en/language.oop5.variance.php), it's not possible to create a natively typed collection using inheritance so long as you need methods that operate on specific types. This package provides a configurable 'collection kernel' class that stores and performs operations on a given array. Rather than inheritance, this paradigm uses composition to fulfil basic collection functionality. Besides enabling strong typing, one of the many benefits of this approach is that you have complete control over the operations to be exposed by your collections.
 
 ## Installation
 
@@ -81,4 +81,4 @@ The MIT License (MIT). Please see [License File](LICENSE.md) for more informatio
 [badge-support-ukraine]: https://raw.githubusercontent.com/vshymanskyy/StandWithUkraine/main/badges/StandWithUkraine.svg
 [banner-support-ukraine]: https://raw.githubusercontent.com/vshymanskyy/StandWithUkraine/main/banner2-direct.svg
 [link-support-ukraine]: https://stand-with-ukraine.pp.ua
-[link-to-russia]: https://github.com/vshymanskyy/StandWithUkraine/blob/main/docs/ToRussianPeople.md
+[link-to-russia-message]: https://github.com/vshymanskyy/StandWithUkraine/blob/main/docs/ToRussianPeople.md

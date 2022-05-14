@@ -14,7 +14,7 @@ trait MockeryTrait
 
     protected function makeMockeryOf($class, string ...$interfaces): MockInterface
     {
-        return Mockery::mock($class, ...$interfaces);
+        return Mockery::mock($class, ...$interfaces); // @phpstan-ignore-line
     }
 
     protected function closeMockery(): void

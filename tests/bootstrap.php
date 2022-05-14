@@ -9,7 +9,7 @@ $root = dirname(__DIR__);
 
 require_once "$root/vendor/autoload.php";
 
-Dotenv::createUnsafeImmutable($root)->safeLoad();
+Dotenv::createUnsafeImmutable($root)->load();
 
 Exterminator::debug([
     'enable' => env('DEBUG_ENABLE') ?? true,

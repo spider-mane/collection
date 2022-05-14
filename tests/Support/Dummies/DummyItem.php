@@ -2,6 +2,9 @@
 
 namespace Tests\Support\Dummies;
 
+/**
+ * @property string $id
+ */
 class DummyItem
 {
     protected $property;
