@@ -930,13 +930,16 @@ class CollectionKernelTest extends UnitTestCase
         $mockMethod = $this->fake->word;
         $callback = fn ($item) => $item->$mockMethod();
         $items = $this->dummyList(
-            fn () => $this->getMockBuilder(stdClass::class)
+            fn () => $this->getMockBuilder(DummyItem::class)
+                ->setConstructorArgs([$this->unique->slug])
                 ->addMethods([$mockMethod])
                 ->getMock(),
             5
         );
 
-        $sut = new CollectionKernel($items, $this->dummyGenerator);
+        $sut = $this->buildCollectionKernel()
+            ->withItems($items)
+            ->build();
 
         # Expect
         foreach ($items as $item) {

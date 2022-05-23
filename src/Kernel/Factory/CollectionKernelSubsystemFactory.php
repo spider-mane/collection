@@ -7,7 +7,7 @@ use WebTheory\Collection\Access\PropertyMap;
 use WebTheory\Collection\Access\StandardList;
 use WebTheory\Collection\Access\StandardMap;
 use WebTheory\Collection\Comparison\CollectionComparator;
-use WebTheory\Collection\Comparison\ObjectIdComparator;
+use WebTheory\Collection\Comparison\ObjectComparator;
 use WebTheory\Collection\Comparison\ObjectPropertyComparator;
 use WebTheory\Collection\Contracts\ArrayDriverInterface;
 use WebTheory\Collection\Contracts\CollectionComparatorInterface;
@@ -36,7 +36,7 @@ class CollectionKernelSubsystemFactory
         $this->propertyResolver = new PropertyResolver($accessors);
         $this->objectComparator = $identifier
             ? new ObjectPropertyComparator($this->propertyResolver, $identifier)
-            : new ObjectIdComparator();
+            : new ObjectComparator();
     }
 
     public function getPropertyResolver(): PropertyResolverInterface
