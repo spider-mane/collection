@@ -222,11 +222,11 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
 
     public function sortCustom(callable $callback): object
     {
-        $clone = clone $this;
+        $sorted = $this->items;
 
-        usort($clone->items, $callback);
+        uasort($sorted, $callback);
 
-        return $this->spawnWith($clone);
+        return $this->spawnFrom($sorted);
     }
 
     public function map(callable $callback): array

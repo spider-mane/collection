@@ -843,6 +843,12 @@ class CollectionKernelTest extends UnitTestCase
                 'args' => [$sortMap, 'id'],
             ],
 
+            $this->mut('sortCustom') => [
+                'items' => $items,
+                'method' => 'sortCustom',
+                'args' => [fn ($a, $b) => $a->id <=> $b->id],
+            ],
+
             $this->mut('diff') => [
                 'items' => $items,
                 'method' => 'diff',

@@ -20,56 +20,80 @@ class CollectionKernelBuilder
 
     protected ?JsonSerializerInterface $jsonSerializer = null;
 
-    public function withItems(array $items): self
+    /**
+     * @return $this
+     */
+    public function withItems(array $items): CollectionKernelBuilder
     {
         $this->items = $items;
 
         return $this;
     }
 
-    public function withGenerator(Closure $generator): self
+    /**
+     * @return $this
+     */
+    public function withGenerator(Closure $generator): CollectionKernelBuilder
     {
         $this->generator = $generator;
 
         return $this;
     }
 
-    public function withAccessors(array $accessors): self
+    /**
+     * @return $this
+     */
+    public function withAccessors(array $accessors): CollectionKernelBuilder
     {
         $this->accessors = $accessors;
 
         return $this;
     }
 
-    public function withIdentifier(?string $identifier): self
+    /**
+     * @return $this
+     */
+    public function withIdentifier(?string $identifier): CollectionKernelBuilder
     {
         $this->identifier = $identifier;
 
         return $this;
     }
 
-    public function thatIsMapped(): self
+    /**
+     * @return $this
+     */
+    public function thatIsMapped(): CollectionKernelBuilder
     {
         $this->isMap = true;
 
         return $this;
     }
 
-    public function thatIsNotMapped(): self
+    /**
+     * @return $this
+     */
+    public function thatIsNotMapped(): CollectionKernelBuilder
     {
         $this->isMap = false;
 
         return $this;
     }
 
-    public function withMapped(bool $isMap): self
+    /**
+     * @return $this
+     */
+    public function withMapped(bool $isMap): CollectionKernelBuilder
     {
         $this->isMap = $isMap;
 
         return $this;
     }
 
-    public function withJsonSerializer(JsonSerializerInterface $jsonSerializer): self
+    /**
+     * @return $this
+     */
+    public function withJsonSerializer(JsonSerializerInterface $jsonSerializer): CollectionKernelBuilder
     {
         $this->jsonSerializer = $jsonSerializer;
 
