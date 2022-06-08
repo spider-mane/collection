@@ -1128,6 +1128,7 @@ class CollectionKernelTest extends UnitTestCase
         $ids = $this->createDummyIds(10);
         $sort = $this->createDummySortMap($ids);
         $items = $this->createDummyItemMapWithKeys($ids);
+        $callback = fn ($a, $b) => random_int(0, 10) <=> random_int(0, 10);
 
         return [
             // SortBy
@@ -1181,6 +1182,32 @@ class CollectionKernelTest extends UnitTestCase
                 'method' => 'sortMapped',
                 'args' => [$sort, 'id', Order::Desc],
             ],
+
+            // SortCustom
+            $this->mut('sortCustom', 'mapping=auto, order=ascending') => [
+                'items' => $items,
+                'identifier' => 'id',
+                'method' => 'sortCustom',
+                'args' => [$callback, Order::Asc],
+            ],
+            $this->mut('sortCustom', 'mapping=auto, order=descending') => [
+                'items' => $items,
+                'identifier' => 'id',
+                'method' => 'sortCustom',
+                'args' => [$callback, Order::Desc],
+            ],
+            $this->mut('sortCustom', 'mapping=standard, order=ascending') => [
+                'items' => $items,
+                'identifier' => null,
+                'method' => 'sortCustom',
+                'args' => [$callback, Order::Asc],
+            ],
+            $this->mut('sortCustom', 'mapping=standard, order=descending') => [
+                'items' => $items,
+                'identifier' => null,
+                'method' => 'sortCustom',
+                'args' => [$callback, Order::Desc],
+            ],
         ];
     }
 
@@ -1228,6 +1255,7 @@ class CollectionKernelTest extends UnitTestCase
         $map = $this->createDummyItemMapWithKeys($itemIds);
         $itemSubset = $this->dummyList(fn () => $map[array_rand($map)], $itemCount / 2);
         $combine = $this->createDummyItemMap(10);
+        $callback = fn ($a, $b) => random_int(0, 10) <=> random_int(0, 10);
 
         return [
             // diff

@@ -28,6 +28,7 @@ use WebTheory\Collection\Json\BasicJsonSerializer;
 use WebTheory\Collection\Kernel\Factory\CollectionKernelSubsystemFactory;
 use WebTheory\Collection\Query\BasicQuery;
 use WebTheory\Collection\Query\Operation\Operations;
+use WebTheory\Collection\Sorting\CallbackSorter;
 use WebTheory\Collection\Sorting\MapBasedSorter;
 use WebTheory\Collection\Sorting\PropertyBasedSorter;
 
@@ -220,13 +221,9 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
         );
     }
 
-    public function sortCustom(callable $callback): object
+    public function sortCustom(callable $callback, string $order = Order::Asc): object
     {
-        $sorted = $this->items;
-
-        uasort($sorted, $callback);
-
-        return $this->spawnFrom($sorted);
+        return $this->sort(new CallbackSorter($callback), $order);
     }
 
     public function map(callable $callback): array
