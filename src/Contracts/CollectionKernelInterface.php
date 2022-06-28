@@ -53,7 +53,7 @@ interface CollectionKernelInterface extends Traversable, Countable, JsonSerializ
 
     public function sortMapped(array $map, string $property, string $order = Order::Asc): object;
 
-    public function sortCustom(callable $callback): object;
+    public function sortCustom(callable $callback, string $order = Order::Asc): object;
 
     public function map(callable $callback): array;
 

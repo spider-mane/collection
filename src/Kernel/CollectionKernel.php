@@ -309,7 +309,7 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
         return $this->propertyResolver->resolveProperty($item, $property);
     }
 
-    protected function spawnWith(CollectionKernel $clone): object
+    protected function spawnWith(self $clone): object
     {
         return ($this->generator)($clone);
     }
