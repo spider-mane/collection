@@ -96,11 +96,6 @@ class CollectionKernel implements CollectionKernelInterface, IteratorAggregate
         $this->collect($items);
     }
 
-    public function __serialize(): array
-    {
-        return $this->toArray();
-    }
-
     public function collect(array $items): void
     {
         $this->driver->collect($this->items, $items);
